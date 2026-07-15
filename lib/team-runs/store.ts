@@ -10,8 +10,9 @@ import {
 import { dirname, join } from "path";
 import { randomUUID } from "crypto";
 import { DEFAULT_BUDGET, createDefaultFeatureNodes } from "./defaults";
-import { projectGoalPath, projectPlanPath, projectTeamDir, teamRunPath, teamRunsDir } from "./paths";
-import type { RoleTemplate, RunEvent, TeamRun, TeamRunListItem } from "./types";
+import { projectGoalPath, projectGoalSpecPath, projectPlanPath, projectTeamDir, teamRunPath, teamRunsDir } from "./paths";
+import type { GoalSpec, RoleTemplate, RunEvent, TeamRun, TeamRunListItem } from "./types";
+import { goalSpecSummary, renderGoalSpecMarkdown } from "./goal-spec";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -85,6 +86,7 @@ export function listTeamRuns(agentDir?: string): TeamRunListItem[] {
 export type CreateTeamRunInput = {
   cwd: string;
   goal: string;
+  goalSpec?: GoalSpec;
   roleSnapshots: RoleTemplate[];
   budget?: Partial<TeamRun["budget"]>;
   agentDir?: string;
@@ -92,10 +94,12 @@ export type CreateTeamRunInput = {
 
 export function createTeamRun(input: CreateTeamRunInput): TeamRun {
   const createdAt = nowIso();
+  const goal = (input.goalSpec ? goalSpecSummary(input.goalSpec) : input.goal).trim();
   const run: TeamRun = {
     id: randomUUID(),
     cwd: input.cwd,
-    goal: input.goal,
+    goal,
+    goalSpec: input.goalSpec,
     status: "created",
     budget: { ...DEFAULT_BUDGET, ...input.budget },
     replanCount: 0,
@@ -119,7 +123,16 @@ export function createTeamRun(input: CreateTeamRunInput): TeamRun {
 
   ensureDir(teamRunsDir(input.agentDir));
   ensureDir(projectTeamDir(input.cwd));
-  writeFileSync(projectGoalPath(input.cwd), `# Goal\n\n${input.goal.trim()}\n`, "utf8");
+  if (input.goalSpec) {
+    const md = renderGoalSpecMarkdown(input.goalSpec);
+    writeFileSync(projectGoalSpecPath(input.cwd), md, "utf8");
+    writeFileSync(projectGoalPath(input.cwd), md, "utf8");
+  } else {
+    writeFileSync(projectGoalPath(input.cwd), `# Goal
+
+${goal}
+`, "utf8");
+  }
   writeTeamRun(run, input.agentDir);
   return run;
 }

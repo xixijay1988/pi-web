@@ -33,7 +33,8 @@ Merge: project entries override global by `roleId`. Unmentioned global roles rem
 
 ```text
 <cwd>/.team/
-  goal.md
+  goal.md                    # human-facing goal (Goal Spec markdown when present)
+  goal-spec.md               # structured Goal Spec (Outcome / Primary Path / checks)
   plan.md
   notes.md
   roles.json                 # optional project overrides
@@ -150,10 +151,20 @@ export type RunEvent = {
   data?: Record<string, unknown>;
 };
 
+export type GoalSpec = {
+  outcome: string;
+  primaryPath: string;
+  acceptanceChecks: string[];
+  constraints?: string;
+  outOfScope?: string;
+  notes?: string;
+};
+
 export type TeamRun = {
   id: string;
   cwd: string;
-  goal: string;
+  goal: string;              // summary line; usually GoalSpec.outcome
+  goalSpec?: GoalSpec;       // structured create-time Goal Spec (preferred)
   status: RunStatus;
   budget: Budget;
   replanCount: number;
@@ -202,11 +213,47 @@ Deps: `implement→architect`, `test→implement`, `review→test`.
 - Path must match the node’s current attempt version directory.
 - File must exist and be non-empty.
 
+### Goal Spec (create-time)
+
+Creating a Team Run should collect a **Goal Spec**, not a one-line goal only:
+
+- `outcome` (required)
+- `primaryPath` (required when `requireStrongGoal` is true, default true): how a human opens/uses the result
+- `acceptanceChecks` (≥3 when strong): observable checks the human will use at final acceptance
+- optional `constraints`, `outOfScope`, `notes`
+
+On create:
+
+- write `.team/goal-spec.md` (and mirror into `.team/goal.md`)
+- persist `goalSpec` on the TeamRun JSON
+- inject Goal Spec into every Dispatch Brief
+
+API `POST /api/team-runs` accepts either legacy `{ goal }` (weak unless mapped into outcome) or structured fields:
+`outcome`, `primaryPath`, `acceptanceChecks`, `constraints`, `outOfScope`, `notes`, `requireStrongGoal`.
+
+Strong validation failure → HTTP 400 with `{ error, errors[], warnings[] }`.
+
 ### `acceptance.md`
 
 - YAML frontmatter or leading field: `status: pass` or `status: fail`.
 - Node succeeds for pipeline completion only when `status: pass`.
+- When `status: pass`, must also include `primary_path_verified: true` (reviewer independently verified the human Primary Path).
 - `status: fail` → node failed (triggers retry/replan policy), not human acceptance.
+
+### `contract.md`
+
+- Must include `## Primary Path` and `## Acceptance` sections.
+
+### `test-report.md`
+
+- Must document environments (`## Environments` or `primary: ...`).
+- Must include `status: pass` or `status: fail`.
+- `status: fail` fails the node.
+- If text indicates the primary path failed/blocked, hard-fail even if overall wording looks positive.
+
+### `change-summary.md`
+
+- Soft warning if missing a how-to-open / Primary Path style section.
 
 ### `plan.md` (orchestrator)
 
@@ -233,7 +280,7 @@ If parsing fails → `planning_failed` event; retry orchestrator within budget; 
 
 Every worker dispatch user message must include:
 
-1. Team Run goal (or path to `.team/goal.md`)
+1. Team Run goal / Goal Spec (or paths to `.team/goal-spec.md` / `.team/goal.md`) including Primary Path and acceptance checks when present
 2. This node title + role responsibilities
 3. Absolute or cwd-relative paths of **dependency artifacts**
 4. Exact output path(s) to write for this attempt
@@ -265,7 +312,7 @@ Body:
 ```
 
 Response: `{ run: TeamRun }`  
-Creates snapshot, writes `.team/goal.md`, optionally starts engine.
+Creates snapshot, validates Goal Spec (strong by default), writes `.team/goal-spec.md` + `.team/goal.md`, optionally starts engine.
 
 ### `GET /api/team-runs/[id]`
 

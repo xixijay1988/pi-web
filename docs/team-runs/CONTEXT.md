@@ -77,6 +77,10 @@ _Avoid_: Calling these the database of record
 User-authored guidance attached to a Team Run for the next planning cycle, also projected to `.team/notes.md`.
 _Avoid_: Chat message to a Worker Role (that is intervention)
 
+**Goal Spec**:
+Structured create-time description of success: Outcome, Primary Path (how a human opens/uses the result), and ≥3 acceptance checks. Stored as `.team/goal-spec.md` and on the TeamRun as `goalSpec`. Strong Goal Spec is required by default to reduce false-green runs.
+_Avoid_: One-line goal only, goal that omits the real human path
+
 **Human Gate**:
 A point where the user must act for the Team Run to continue. v1 has start (create/start) and final acceptance only.
 _Avoid_: Mid-stage approvals (explicitly out of v1)

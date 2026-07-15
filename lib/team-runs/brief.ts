@@ -18,6 +18,17 @@ export function buildDispatchBrief(input: {
     `## Goal`,
     run.goal.trim(),
     ``,
+    ...(run.goalSpec
+      ? [
+          `## Goal Spec (authoritative)`,
+          `- Primary Path: ${run.goalSpec.primaryPath || "(missing)"}`,
+          `- Acceptance checks:`,
+          ...run.goalSpec.acceptanceChecks.map((c, i) => `  ${i + 1}. ${c}`),
+          run.goalSpec.constraints ? `- Constraints: ${run.goalSpec.constraints}` : "",
+          run.goalSpec.outOfScope ? `- Out of scope: ${run.goalSpec.outOfScope}` : "",
+          ``,
+        ].filter((l) => l !== "")
+      : []),
     `## This node`,
     `- node id: \`${node.id}\``,
     `- title: ${node.title}`,

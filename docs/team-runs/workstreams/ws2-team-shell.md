@@ -46,3 +46,9 @@ access to role sessions — even before full autonomy.
 ## Implementation status
 
 **Landed (shell):** `/api/team-runs`, commands, SSE placeholder, `components/TeamMode.tsx`, Chat|Team switch in AppShell. Engine start still WS3.
+
+## Follow-up (Goal Spec)
+
+- Create form collects Outcome / Primary Path / ≥3 acceptance checks (Align then start | Quick form).
+- API rejects weak goals when `requireStrongGoal` is true (default).
+- Optional later: live Goal-coach Agent session; Chat skill import into Team.

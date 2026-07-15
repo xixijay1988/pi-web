@@ -44,7 +44,13 @@ export function TeamMode({
   const [runs, setRuns] = useState<TeamRunListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { run, setRun, error, setError, loading } = useTeamRun(selectedId);
-  const [goal, setGoal] = useState("");
+  const [createMode, setCreateMode] = useState<"quick" | "align">("align");
+  const [outcome, setOutcome] = useState("");
+  const [primaryPath, setPrimaryPath] = useState("");
+  const [acceptanceText, setAcceptanceText] = useState("");
+  const [constraints, setConstraints] = useState("");
+  const [outOfScope, setOutOfScope] = useState("");
+  const [alignDraft, setAlignDraft] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
@@ -89,8 +95,13 @@ export function TeamMode({
       setError("Select a project cwd first (Chat sidebar / explorer).");
       return;
     }
-    if (!goal.trim()) {
-      setError("Goal is required");
+    const acceptanceChecks = acceptanceText
+      .split(/\n/)
+      .map((l) => l.replace(/^\s*(?:\d+[.)]\s*|[-*]\s*)/, "").trim())
+      .filter(Boolean);
+    const resolvedOutcome = outcome.trim() || alignDraft.trim();
+    if (!resolvedOutcome) {
+      setError("Outcome / goal is required");
       return;
     }
     setBusy(true);
@@ -99,11 +110,26 @@ export function TeamMode({
       const res = await fetch("/api/team-runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cwd, goal: goal.trim(), start: true }),
+        body: JSON.stringify({
+          cwd,
+          outcome: resolvedOutcome,
+          primaryPath: primaryPath.trim(),
+          acceptanceChecks,
+          constraints: constraints.trim() || undefined,
+          outOfScope: outOfScope.trim() || undefined,
+          notes: createMode === "align" && alignDraft.trim() ? alignDraft.trim() : undefined,
+          requireStrongGoal: true,
+          start: true,
+        }),
       });
-      const d = await res.json() as { run?: { id: string }; error?: string };
-      if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
-      setGoal("");
+      const d = await res.json() as { run?: { id: string }; error?: string; errors?: string[] };
+      if (!res.ok) throw new Error(d.error || d.errors?.join("; ") || `HTTP ${res.status}`);
+      setOutcome("");
+      setPrimaryPath("");
+      setAcceptanceText("");
+      setConstraints("");
+      setOutOfScope("");
+      setAlignDraft("");
       await loadList();
       if (d.run) setSelectedId(d.run.id);
     } catch (e) {
@@ -178,30 +204,98 @@ export function TeamMode({
           background: "var(--bg-panel)",
         }}
       >
-        <div style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Team Runs</div>
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            placeholder={cwd ? `Goal for ${shortenPath(cwd)}` : "Select a cwd in Chat sidebar first"}
-            rows={3}
-            style={{
-              width: "100%",
-              resize: "vertical",
-              padding: 8,
-              borderRadius: 6,
-              border: "1px solid var(--border)",
-              background: "var(--bg)",
-              color: "var(--text)",
-              fontSize: 12,
-              boxSizing: "border-box",
-            }}
-          />
+        <div style={{ padding: 12, borderBottom: "1px solid var(--border)", overflow: "auto", maxHeight: "55%" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>New Team Run</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            {([
+              ["align", "Align then start"],
+              ["quick", "Quick form"],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setCreateMode(id)}
+                style={{
+                  flex: 1,
+                  padding: "5px 6px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border)",
+                  background: createMode === id ? "var(--accent)" : "transparent",
+                  color: createMode === id ? "#fff" : "var(--text-muted)",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {!cwd && (
+            <div style={{ fontSize: 11, color: "#ef4444", marginBottom: 8 }}>
+              Select a project cwd in the Chat sidebar first.
+            </div>
+          )}
+
+          {createMode === "align" && (
+            <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
+              Draft with an agent in Chat if needed, then paste the agreed Outcome / Primary Path / checks here before start.
+              Strong Goal Spec is required to reduce false-green runs.
+            </div>
+          )}
+
+          <Field label="Outcome *">
+            <textarea
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value)}
+              placeholder="What should exist when done?"
+              rows={2}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Primary Path *">
+            <textarea
+              value={primaryPath}
+              onChange={(e) => setPrimaryPath(e.target.value)}
+              placeholder="How a human opens/uses it (e.g. double-click index.html / npx serve .)"
+              rows={2}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Acceptance checks * (one per line, ≥3)">
+            <textarea
+              value={acceptanceText}
+              onChange={(e) => setAcceptanceText(e.target.value)}
+              placeholder={"1. Add non-empty todo → item appears\n2. Refresh keeps todos\n3. Toggle complete works"}
+              rows={4}
+              style={fieldStyle}
+            />
+          </Field>
+          {createMode === "align" && (
+            <Field label="Discussion notes (optional)">
+              <textarea
+                value={alignDraft}
+                onChange={(e) => setAlignDraft(e.target.value)}
+                placeholder="Paste key decisions from Chat alignment..."
+                rows={3}
+                style={fieldStyle}
+              />
+            </Field>
+          )}
+          <details style={{ marginBottom: 8 }}>
+            <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>Optional constraints</summary>
+            <Field label="Constraints">
+              <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} rows={2} style={fieldStyle} />
+            </Field>
+            <Field label="Out of scope">
+              <textarea value={outOfScope} onChange={(e) => setOutOfScope(e.target.value)} rows={2} style={fieldStyle} />
+            </Field>
+          </details>
+
           <button
             onClick={() => void createRun()}
             disabled={busy || !cwd}
             style={{
-              marginTop: 8,
+              marginTop: 4,
               width: "100%",
               padding: "8px 10px",
               borderRadius: 6,
@@ -213,10 +307,10 @@ export function TeamMode({
               fontSize: 12,
             }}
           >
-            Create & start Team Run
+            Confirm Goal Spec & start
           </button>
           <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
-            Engine runs serially: plan → architect → implement → test → review → your acceptance.
+            Serial engine: plan → architect → implement → test → review → your acceptance.
           </div>
         </div>
         <div style={{ flex: 1, overflow: "auto" }}>
@@ -500,6 +594,27 @@ function Chip({ children }: { children: React.ReactNode }) {
     </span>
   );
 }
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+const fieldStyle: React.CSSProperties = {
+  width: "100%",
+  resize: "vertical",
+  padding: 8,
+  borderRadius: 6,
+  border: "1px solid var(--border)",
+  background: "var(--bg)",
+  color: "var(--text)",
+  fontSize: 12,
+  boxSizing: "border-box",
+};
 
 function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000);

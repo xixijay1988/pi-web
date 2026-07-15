@@ -27,6 +27,18 @@ own model/tools) → roles write versioned Markdown artifacts under `.team/` →
 reviewer pass → human final accept. Existing single-session Chat stays intact;
 Team is a parallel mode.
 
+## Goal Spec (anti false-green)
+
+Team create requires a **strong Goal Spec** by default:
+
+- Outcome
+- Primary Path (human open/use path — not only a developer server)
+- ≥3 acceptance checks
+
+This is written to `.team/goal-spec.md`, injected into Dispatch Briefs, and enforced by hard validators on contract / test-report / acceptance artifacts (`primary_path_verified: true` on pass).
+
+UI: **Align then start** | **Quick form** → **Confirm Goal Spec & start**. Live Goal-coach chat and Chat Skill import are later slices.
+
 ## Non-negotiables (do not "simplify away")
 
 - Runtime truth lives in `$PI_CODING_AGENT_DIR/team-runs/`, not in pi jsonl headers.

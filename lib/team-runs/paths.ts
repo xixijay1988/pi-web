@@ -27,6 +27,10 @@ export function projectGoalPath(cwd: string): string {
   return join(projectTeamDir(cwd), "goal.md");
 }
 
+export function projectGoalSpecPath(cwd: string): string {
+  return join(projectTeamDir(cwd), "goal-spec.md");
+}
+
 export function projectPlanPath(cwd: string): string {
   return join(projectTeamDir(cwd), "plan.md");
 }

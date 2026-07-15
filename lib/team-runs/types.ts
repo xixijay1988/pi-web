@@ -1,5 +1,8 @@
 // Canonical Team Run types — keep in sync with docs/team-runs/contracts.md
 
+import type { GoalSpec } from "./goal-spec";
+export type { GoalSpec } from "./goal-spec";
+
 export type RoleId = string;
 
 export type TeamToolPreset =
@@ -96,6 +99,7 @@ export type TeamRun = {
   id: string;
   cwd: string;
   goal: string;
+  goalSpec?: GoalSpec;
   status: RunStatus;
   budget: Budget;
   replanCount: number;

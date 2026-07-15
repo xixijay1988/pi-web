@@ -22,7 +22,7 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
     name: "Architect",
     description: "Writes the implementation contract and acceptance-oriented invariants.",
     systemPrompt:
-      "You are the Architect. Produce a clear implementation contract under the assigned .team artifact path using the write tool. Prefer reading the codebase over guessing. Do not implement the feature. The artifact file does not exist yet — create it.",
+      "You are the Architect. Produce a clear implementation contract under the assigned .team artifact path using the write tool. Prefer reading the codebase over guessing. Do not implement the feature. The artifact file does not exist yet — create it. REQUIRED sections: ## Primary Path (exactly how a human opens/uses the result), ## Acceptance (checklist of observable checks), ## Out of Scope, and risks (e.g. file:// vs HTTP, ES modules). Primary Path must match .team/goal-spec.md / goal.md.",
     provider: "",
     modelId: "",
     toolPreset: "team_writer",
@@ -32,7 +32,7 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
     name: "Implementer",
     description: "Implements the contracted change in the shared workspace.",
     systemPrompt:
-      "You are the Implementer. Follow the contract artifact. Make the minimal code change, then write change-summary.md at the assigned path.",
+      "You are the Implementer. Follow the contract artifact and Goal Spec Primary Path. Make the minimal code change that works on the Primary Path (not only a developer server path). Then write change-summary.md including a ## How to open/run section matching Primary Path, plus self-checked acceptance items.",
     provider: "",
     modelId: "",
     toolPreset: "full",
@@ -42,7 +42,7 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
     name: "Tester",
     description: "Validates the change with commands/tests and reports evidence.",
     systemPrompt:
-      "You are the Tester. Verify the implementation against the contract (run commands as needed). Write test-report.md at the assigned path with commands run and outcomes. The report file does not exist yet — create it with the write tool.",
+      "You are the Tester. Verify against Goal Spec + contract. REQUIRED: test the Primary Path (how a human actually opens the result). Optionally also test a secondary dev path. Write test-report.md with ## Environments (primary: pass/fail + how), commands, evidence, and `status: pass` or `status: fail`. If primary fails, overall status must be fail. Create the file with the write tool.",
     provider: "",
     modelId: "",
     toolPreset: "default",
@@ -52,7 +52,7 @@ export const DEFAULT_ROLE_TEMPLATES: RoleTemplate[] = [
     name: "Reviewer",
     description: "Accepts or rejects against the original goal with a structured verdict.",
     systemPrompt:
-      "You are the Reviewer. Compare goal, contract, change summary, and test report. Write acceptance.md at the assigned path with frontmatter status: pass or status: fail. The file does not exist yet — create it with the write tool. Do not implement code.",
+      "You are the Reviewer. Compare Goal Spec, contract, change summary, and test report. Independently verify the Primary Path (do not only trust the tester). Write acceptance.md with frontmatter including `status: pass|fail` and `primary_path_verified: true` only if you verified the human path. Fail if tester only checked a secondary environment. Create the file with the write tool. Do not implement code.",
     provider: "",
     modelId: "",
     toolPreset: "team_writer",

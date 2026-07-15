@@ -1,3 +1,4 @@
+export * from "./goal-spec";
 export * from "./types";
 export * from "./defaults";
 export * from "./paths";

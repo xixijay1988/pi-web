@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { stat } from "fs/promises";
 import {
   appendRunEvent,
+  buildGoalSpec,
   createTeamRun,
   listTeamRuns,
   resolveRolesForCwd,
   snapshotRoles,
   startTeamRunEngine,
+  validateGoalSpec,
   writeTeamRun,
   type RoleTemplate,
 } from "@/lib/team-runs";
@@ -27,13 +29,42 @@ export async function POST(req: Request) {
     const body = await req.json() as {
       cwd?: unknown;
       goal?: unknown;
+      outcome?: unknown;
+      primaryPath?: unknown;
+      acceptanceChecks?: unknown;
+      constraints?: unknown;
+      outOfScope?: unknown;
+      notes?: unknown;
+      requireStrongGoal?: unknown;
       roleOverrides?: unknown;
       start?: unknown;
     };
     const cwd = typeof body.cwd === "string" ? body.cwd.trim() : "";
-    const goal = typeof body.goal === "string" ? body.goal.trim() : "";
     if (!cwd) return NextResponse.json({ error: "cwd required" }, { status: 400 });
-    if (!goal) return NextResponse.json({ error: "goal required" }, { status: 400 });
+
+    const requireStrongGoal = body.requireStrongGoal !== false;
+    const goalSpec = buildGoalSpec({
+      goal: typeof body.goal === "string" ? body.goal : undefined,
+      outcome: typeof body.outcome === "string" ? body.outcome : undefined,
+      primaryPath: typeof body.primaryPath === "string" ? body.primaryPath : undefined,
+      acceptanceChecks: Array.isArray(body.acceptanceChecks)
+        ? body.acceptanceChecks.filter((x): x is string => typeof x === "string")
+        : typeof body.acceptanceChecks === "string"
+          ? body.acceptanceChecks
+          : undefined,
+      constraints: typeof body.constraints === "string" ? body.constraints : undefined,
+      outOfScope: typeof body.outOfScope === "string" ? body.outOfScope : undefined,
+      notes: typeof body.notes === "string" ? body.notes : undefined,
+    });
+    const validated = validateGoalSpec(goalSpec, { requireStrong: requireStrongGoal });
+    if (!validated.ok) {
+      return NextResponse.json(
+        { error: validated.errors.join("; "), errors: validated.errors, warnings: validated.warnings },
+        { status: 400 },
+      );
+    }
+    const goal = goalSpec.outcome;
+    if (!goal) return NextResponse.json({ error: "goal/outcome required" }, { status: 400 });
 
     try {
       const st = await stat(cwd);
@@ -78,6 +109,7 @@ export async function POST(req: Request) {
     let run = createTeamRun({
       cwd,
       goal,
+      goalSpec,
       roleSnapshots: snapshotRoles(roles),
     });
 
