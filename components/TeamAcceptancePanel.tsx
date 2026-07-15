@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import type { PlanNode, TeamRun } from "@/lib/team-runs/types";
 
@@ -12,6 +12,8 @@ type ArtifactCard = {
   missing?: boolean;
   error?: string;
 };
+
+type CheckState = "unchecked" | "pass" | "fail";
 
 export function TeamAcceptancePanel({
   run,
@@ -28,13 +30,45 @@ export function TeamAcceptancePanel({
 }) {
   const [cards, setCards] = useState<ArtifactCard[]>([]);
   const [feedback, setFeedback] = useState("");
+  const [checkState, setCheckState] = useState<Record<string, CheckState>>({});
   const ready = run.status === "awaiting_human_acceptance";
   const canRework = ready || run.status === "blocked";
+
+  const checks = useMemo(() => {
+    const fromSpec = run.goalSpec?.acceptanceChecks?.filter(Boolean) ?? [];
+    const base = [
+      {
+        id: "primary_path",
+        label: run.goalSpec?.primaryPath
+          ? `Primary Path works: ${run.goalSpec.primaryPath}`
+          : "Primary Path works as documented for a human",
+      },
+      ...fromSpec.map((c, i) => ({ id: `ac_${i}`, label: c })),
+    ];
+    // de-dupe by label
+    const seen = new Set<string>();
+    return base.filter((c) => {
+      const k = c.label.trim().toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [run.goalSpec]);
+
+  useEffect(() => {
+    // reset local check marks when run identity / goal changes
+    setCheckState({});
+  }, [run.id, run.goal, run.goalSpec?.primaryPath]);
 
   useEffect(() => {
     let cancelled = false;
     const specs: Array<{ key: string; title: string; path?: string }> = [
-      { key: "goal", title: "Goal", path: `${run.cwd.replace(/\/$/, "")}/.team/goal.md` },
+      {
+        key: "goal",
+        title: "Goal Spec",
+        path: `${run.cwd.replace(/\/$/, "")}/.team/goal-spec.md`,
+      },
+      { key: "goal_fallback", title: "Goal", path: `${run.cwd.replace(/\/$/, "")}/.team/goal.md` },
       {
         key: "contract",
         title: "Contract",
@@ -59,15 +93,18 @@ export function TeamAcceptancePanel({
 
     (async () => {
       const next: ArtifactCard[] = [];
+      let goalSpecLoaded = false;
       for (const spec of specs) {
         if (!spec.path) {
           next.push({ ...spec, missing: true });
           continue;
         }
+        if (spec.key === "goal_fallback" && goalSpecLoaded) continue;
         try {
           const res = await fetch(`/api/files/${encodeFilePathForApi(spec.path)}?type=read`);
           const data = await res.json().catch(() => ({})) as { content?: string; error?: string };
           if (!res.ok) {
+            if (spec.key === "goal") continue; // try goal.md
             next.push({
               ...spec,
               path: spec.path,
@@ -76,13 +113,16 @@ export function TeamAcceptancePanel({
             });
             continue;
           }
+          if (spec.key === "goal") goalSpecLoaded = true;
           next.push({
             ...spec,
+            title: spec.key === "goal" ? "Goal Spec" : spec.title,
             path: spec.path,
             body: typeof data.content === "string" ? data.content : undefined,
             missing: typeof data.content !== "string",
           });
         } catch (e) {
+          if (spec.key === "goal") continue;
           next.push({
             ...spec,
             path: spec.path,
@@ -99,6 +139,29 @@ export function TeamAcceptancePanel({
     };
   }, [run]);
 
+  const failedChecks = checks.filter((c) => checkState[c.id] === "fail");
+  const allCheckedPass =
+    checks.length > 0 && checks.every((c) => checkState[c.id] === "pass");
+  const anyUnchecked = checks.some((c) => !checkState[c.id] || checkState[c.id] === "unchecked");
+
+  const cycleCheck = (id: string) => {
+    setCheckState((prev) => {
+      const cur = prev[id] ?? "unchecked";
+      const next: CheckState = cur === "unchecked" ? "pass" : cur === "pass" ? "fail" : "unchecked";
+      return { ...prev, [id]: next };
+    });
+  };
+
+  const buildReworkFeedback = () => {
+    const parts: string[] = [];
+    if (failedChecks.length) {
+      parts.push("Failed Goal Spec checks:");
+      for (const c of failedChecks) parts.push(`- ${c.label}`);
+    }
+    if (feedback.trim()) parts.push(feedback.trim());
+    return parts.join("\n");
+  };
+
   return (
     <div
       style={{
@@ -112,13 +175,77 @@ export function TeamAcceptancePanel({
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <div style={{ fontSize: 13, fontWeight: 600 }}>Final acceptance</div>
         <span style={{ fontSize: 11, color: "var(--text-dim)" }}>
-          {ready ? "Reviewer passed — confirm or request rework" : run.status === "blocked" ? "Blocked — add feedback to rework" : `Status: ${run.status}`}
+          {ready
+            ? "Reviewer passed — verify Goal Spec checks, then confirm or rework"
+            : run.status === "blocked"
+              ? "Blocked — mark failed checks + feedback to rework"
+              : `Status: ${run.status}`}
         </span>
       </div>
 
-      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, whiteSpace: "pre-wrap" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, whiteSpace: "pre-wrap" }}>
         {run.goal}
       </div>
+
+      {run.goalSpec?.primaryPath && (
+        <div
+          style={{
+            fontSize: 12,
+            marginBottom: 10,
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid var(--border)",
+            background: "var(--bg)",
+            lineHeight: 1.45,
+          }}
+        >
+          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 2 }}>Primary Path</div>
+          <div style={{ color: "var(--text)", whiteSpace: "pre-wrap" }}>{run.goalSpec.primaryPath}</div>
+        </div>
+      )}
+
+      {checks.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>
+            Goal Spec checklist (click: pass → fail → clear)
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {checks.map((c) => {
+              const st = checkState[c.id] ?? "unchecked";
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => cycleCheck(c.id)}
+                  style={{
+                    textAlign: "left",
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "flex-start",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: st === "pass"
+                      ? "color-mix(in srgb, #10b981 12%, var(--bg))"
+                      : st === "fail"
+                        ? "color-mix(in srgb, #ef4444 12%, var(--bg))"
+                        : "var(--bg)",
+                    color: "var(--text)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <span style={{ width: 16, flexShrink: 0, fontWeight: 700, color: st === "pass" ? "#10b981" : st === "fail" ? "#ef4444" : "var(--text-dim)" }}>
+                    {st === "pass" ? "✓" : st === "fail" ? "✕" : "○"}
+                  </span>
+                  <span>{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
         {cards.map((c) => (
@@ -176,7 +303,7 @@ export function TeamAcceptancePanel({
 
       <div style={{ marginTop: 12 }}>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
-          If something is wrong, describe the concrete issues (what broke, expected behavior). Reject & rework will re-run implement/test/review with your notes.
+          Fail any checklist item or describe issues below. Rework re-runs implement → test → review with your notes injected into worker briefs.
         </div>
         <textarea
           value={feedback}
@@ -195,24 +322,42 @@ export function TeamAcceptancePanel({
             marginBottom: 10,
           }}
         />
+        {ready && anyUnchecked && (
+          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8 }}>
+            Tip: walk the Primary Path and mark each Goal Spec check before accepting.
+          </div>
+        )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
-            disabled={!ready || busy}
+            disabled={!ready || busy || failedChecks.length > 0}
             onClick={onAccept}
-            title={ready ? "Mark this Team Run done" : "Accept is only available while awaiting human acceptance"}
-            style={btnStyle(true, !ready || !!busy)}
+            title={
+              failedChecks.length
+                ? "Clear failed checks or use Reject & rework"
+                : ready
+                  ? allCheckedPass
+                    ? "Mark this Team Run done"
+                    : "Accept is available; checklist still recommended"
+                  : "Accept is only available while awaiting human acceptance"
+            }
+            style={btnStyle(true, !ready || !!busy || failedChecks.length > 0)}
           >
             Accept & mark done
           </button>
           <button
-            disabled={!canRework || busy || !feedback.trim()}
+            disabled={!canRework || busy || (!feedback.trim() && failedChecks.length === 0)}
             onClick={() => {
-              const msg = feedback.trim();
-              if (!msg) return;
+              const msg = buildReworkFeedback();
+              if (!msg.trim()) return;
               onReject(msg);
+              setFeedback("");
             }}
-            title={!feedback.trim() ? "Write feedback first" : "Re-run implement/test/review with your notes"}
-            style={btnStyle(false, !canRework || !!busy || !feedback.trim())}
+            title={
+              !feedback.trim() && failedChecks.length === 0
+                ? "Mark failed checks or write feedback first"
+                : "Re-run implement/test/review with your notes"
+            }
+            style={btnStyle(false, !canRework || !!busy || (!feedback.trim() && failedChecks.length === 0))}
           >
             Reject & rework
           </button>

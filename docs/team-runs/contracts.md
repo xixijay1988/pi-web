@@ -238,6 +238,8 @@ Strong validation failure → HTTP 400 with `{ error, errors[], warnings[] }`.
 - YAML frontmatter or leading field: `status: pass` or `status: fail`.
 - Node succeeds for pipeline completion only when `status: pass`.
 - When `status: pass`, must also include `primary_path_verified: true` (reviewer independently verified the human Primary Path).
+- Pass body should describe primary-path verification evidence.
+
 - `status: fail` → node failed (triggers retry/replan policy), not human acceptance.
 
 ### `contract.md`
@@ -250,10 +252,12 @@ Strong validation failure → HTTP 400 with `{ error, errors[], warnings[] }`.
 - Must include `status: pass` or `status: fail`.
 - `status: fail` fails the node.
 - If text indicates the primary path failed/blocked, hard-fail even if overall wording looks positive.
+- When overall `status: pass`, must explicitly mark primary path pass (e.g. `primary: pass`).
+
 
 ### `change-summary.md`
 
-- Soft warning if missing a how-to-open / Primary Path style section.
+- Hard-fail if missing a how-to-open / Primary Path style section.
 
 ### `plan.md` (orchestrator)
 
@@ -286,6 +290,9 @@ Every worker dispatch user message must include:
 4. Exact output path(s) to write for this attempt
 5. Hard validation expectations
 6. Explicit instruction: do not modify unrelated areas; orchestrator must not edit business source
+7. Goal Spec Primary Path + acceptance checks when present
+8. Latest human rework / reject notes when present (MUST address)
+
 
 Do not assume the model “remembers” prior sticky turns as the contract.
 

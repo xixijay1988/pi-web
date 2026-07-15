@@ -507,11 +507,29 @@ function dependencyArtifactPaths(run: TeamRun, node: PlanNode): string[] {
 
 function hardExpectationsFor(role: RoleTemplate, outputPath: string): string[] {
   const base = [`Write a non-empty file at ${outputPath}`];
-  if (role.roleId === "reviewer") {
-    base.push("acceptance.md must include frontmatter or a line `status: pass` or `status: fail`");
-  }
-  if (role.roleId === "orchestrator") {
-    base.push("Only write under .team/");
+  switch (role.roleId) {
+    case "architect":
+      base.push("contract.md must include ## Primary Path and ## Acceptance");
+      base.push("Primary Path must match Goal Spec human open/use path");
+      break;
+    case "implementer":
+      base.push("change-summary.md must include ## How to open/run (or ## Primary Path)");
+      base.push("Implement for the Goal Spec Primary Path, not only a secondary dev server");
+      break;
+    case "tester":
+      base.push("test-report.md must include ## Environments (or primary: ...) and status: pass|fail");
+      base.push("When status is pass, explicitly mark primary path pass (e.g. primary: pass)");
+      base.push("If primary path fails, overall status must be fail");
+      break;
+    case "reviewer":
+      base.push("acceptance.md must include `status: pass|fail`");
+      base.push("When status is pass, include `primary_path_verified: true` and body evidence of independent primary-path check");
+      break;
+    case "orchestrator":
+      base.push("Only write under .team/");
+      break;
+    default:
+      break;
   }
   return base;
 }
