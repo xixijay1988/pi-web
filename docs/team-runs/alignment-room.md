@@ -224,8 +224,8 @@ SSE optional later (`/events`); Phase B may poll GET.
 ### Team → Align then start
 
 **Phase A**
-- Goal Coach panel gains: model selector, skill multi-select (presets: grill-me, team-goal).
-- Transcript + Apply draft (existing).
+- Full-screen **discussion workspace** (not cramped sidebar): large transcript, markdown, Skills + model rail, Apply draft.
+- Clickable choice prompts: coach uses `A) / B)` options → choice dialog + inline chips (similar spirit to Chat extension `select`).
 - Confirm Goal Spec & start (existing form).
 
 **Phase B**

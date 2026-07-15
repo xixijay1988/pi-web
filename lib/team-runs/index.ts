@@ -2,6 +2,7 @@ export * from "./goal-spec";
 export * from "./goal-coach";
 export * from "./skills-inject";
 export * from "./import-from-chat";
+export * from "./choice-parse";
 export * from "./alignment-types";
 export * from "./alignment-defaults";
 export * from "./alignment-store";

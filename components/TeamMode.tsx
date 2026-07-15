@@ -6,8 +6,8 @@ import type { TeamRunListItem } from "@/lib/team-runs/types";
 import { useTeamRun } from "@/hooks/useTeamRun";
 import { latestBlockedReason, TeamTimeline } from "./TeamTimeline";
 import { TeamAcceptancePanel } from "./TeamAcceptancePanel";
-import { TeamGoalCoach } from "./TeamGoalCoach";
 import { TeamAlignmentRoom } from "./TeamAlignmentRoom";
+import { TeamAlignmentWorkspace } from "./TeamAlignmentWorkspace";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 
 function shortenPath(p: string): string {
@@ -71,6 +71,7 @@ export function TeamMode({
   const [alignDraft, setAlignDraft] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [alignWorkspaceOpen, setAlignWorkspaceOpen] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
@@ -267,29 +268,48 @@ export function TeamMode({
           {createMode === "align" && (
             <>
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
-                Use Goal Coach (single) or multi-seat Alignment Room, then fill/confirm Outcome / Primary Path / ≥3 checks — or Publish & start from the room.
-                Strong Goal Spec is required to reduce false-green runs.
+                Open the full-screen discussion workspace to grill requirements with Skills and clickable choices.
+                Multi-seat room stays available below. Then confirm Goal Spec and start.
               </div>
-              <TeamGoalCoach
-                cwd={cwd}
-                busy={busy}
-                onBusy={setBusy}
-                onError={setError}
-                onApplyDraft={applyGoalDraft}
-                onOpenSession={onOpenSession}
-              />
-              <TeamAlignmentRoom
-                cwd={cwd}
-                busy={busy}
-                onBusy={setBusy}
-                onError={setError}
-                onApplyDraft={applyGoalDraft}
-                onOpenSession={onOpenSession}
-                onPublishedRun={(runId) => {
-                  selectRun(runId);
-                  void loadList();
+              <button
+                type="button"
+                onClick={() => setAlignWorkspaceOpen(true)}
+                disabled={!cwd || busy}
+                style={{
+                  width: "100%",
+                  marginBottom: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "var(--accent)",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: !cwd || busy ? "not-allowed" : "pointer",
+                  opacity: !cwd || busy ? 0.6 : 1,
                 }}
-              />
+              >
+                Open discussion workspace
+              </button>
+              <details style={{ marginBottom: 10 }}>
+                <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>
+                  Multi-seat Alignment Room (advanced)
+                </summary>
+                <div style={{ marginTop: 8 }}>
+                  <TeamAlignmentRoom
+                    cwd={cwd}
+                    busy={busy}
+                    onBusy={setBusy}
+                    onError={setError}
+                    onApplyDraft={applyGoalDraft}
+                    onOpenSession={onOpenSession}
+                    onPublishedRun={(runId) => {
+                      selectRun(runId);
+                      void loadList();
+                    }}
+                  />
+                </div>
+              </details>
             </>
           )}
 
@@ -588,6 +608,16 @@ export function TeamMode({
           </>
         )}
       </div>
+      {alignWorkspaceOpen && (
+        <TeamAlignmentWorkspace
+          open={alignWorkspaceOpen}
+          cwd={cwd}
+          onClose={() => setAlignWorkspaceOpen(false)}
+          onApplyDraft={applyGoalDraft}
+          onOpenSession={onOpenSession}
+          onError={setError}
+        />
+      )}
     </div>
   );
 }
