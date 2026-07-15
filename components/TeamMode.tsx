@@ -36,16 +36,31 @@ function statusColor(status: string): string {
 
 export function TeamMode({
   cwd,
+  selectedRunId,
+  onSelectedRunIdChange,
   onOpenSession,
   onOpenFile,
 }: {
   cwd: string | null;
+  selectedRunId?: string | null;
+  onSelectedRunIdChange?: (id: string | null) => void;
   onOpenSession?: (sessionId: string) => void;
   onOpenFile?: (filePath: string, fileName: string) => void;
 }) {
   const [runs, setRuns] = useState<TeamRunListItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(selectedRunId ?? null);
   const { run, setRun, error, setError, loading } = useTeamRun(selectedId);
+
+  useEffect(() => {
+    if (selectedRunId && selectedRunId !== selectedId) {
+      setSelectedId(selectedRunId);
+    }
+  }, [selectedRunId, selectedId]);
+
+  const selectRun = (id: string | null) => {
+    setSelectedId(id);
+    onSelectedRunIdChange?.(id);
+  };
   const [createMode, setCreateMode] = useState<"quick" | "align">("align");
   const [outcome, setOutcome] = useState("");
   const [primaryPath, setPrimaryPath] = useState("");
@@ -133,7 +148,7 @@ export function TeamMode({
       setOutOfScope("");
       setAlignDraft("");
       await loadList();
-      if (d.run) setSelectedId(d.run.id);
+      if (d.run) selectRun(d.run.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -345,7 +360,7 @@ export function TeamMode({
             runs.map((r) => (
               <button
                 key={r.id}
-                onClick={() => setSelectedId(r.id)}
+                onClick={() => selectRun(r.id)}
                 style={{
                   display: "block",
                   width: "100%",

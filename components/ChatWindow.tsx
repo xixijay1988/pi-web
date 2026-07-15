@@ -27,6 +27,7 @@ interface Props {
   onSessionStatsPanelOpen?: () => void;
   onContextUsageChange?: (usage: { percent: number | null; contextWindow: number; tokens: number | null } | null) => void;
   onOpenFile?: (filePath: string) => void;
+  onPublishToTeam?: (payload: { cwd: string; messages: AgentMessage[] }) => void;
 }
 
 function phaseLabel(phase: AgentPhase): string {
@@ -133,7 +134,7 @@ function ProcessDetailsGroup({ messageCount, toolCallCount, children }: { messag
   );
 }
 
-export function ChatWindow({ session, newSessionCwd, onAgentEnd, onSessionCreated, onSessionForked, modelsRefreshKey, chatInputRef, onBranchDataChange, onSystemPromptChange, onSessionStatsChange, onSessionStatsPanelOpen, onContextUsageChange, onOpenFile }: Props) {
+export function ChatWindow({ session, newSessionCwd, onAgentEnd, onSessionCreated, onSessionForked, modelsRefreshKey, chatInputRef, onBranchDataChange, onSystemPromptChange, onSessionStatsChange, onSessionStatsPanelOpen, onContextUsageChange, onOpenFile, onPublishToTeam }: Props) {
   const { soundEnabled, onSoundToggle, playDoneSound, unlockAudio } = useAudio();
   const isMobile = useIsMobile();
 
@@ -601,6 +602,38 @@ export function ChatWindow({ session, newSessionCwd, onAgentEnd, onSessionCreate
             <ExtensionWidgets widgets={belowEditorWidgets} />
           </div>
         </div>
+        {onPublishToTeam && messageCwd && messages.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: `0 ${CHAT_COLUMN_PADDING}px`,
+              paddingRight: isMobile ? CHAT_COLUMN_PADDING : CHAT_INPUT_RIGHT_PADDING,
+              marginBottom: 6,
+            }}
+          >
+            <div style={{ maxWidth: 820, width: "100%", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => onPublishToTeam({ cwd: messageCwd, messages })}
+                disabled={agentRunning}
+                title={agentRunning ? "Wait for the agent to finish before publishing" : "Publish discussed Goal Spec to Team Run"}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-panel)",
+                  color: agentRunning ? "var(--text-dim)" : "var(--text)",
+                  fontSize: 12,
+                  cursor: agentRunning ? "not-allowed" : "pointer",
+                  opacity: agentRunning ? 0.55 : 1,
+                }}
+              >
+                Publish to Team
+              </button>
+            </div>
+          </div>
+        )}
         {chatInputElement}
       </div>
       </>

@@ -426,3 +426,14 @@ Golden path manual test checklist lives in blueprint Phase 3 exit criteria.
 - Step-level model routing
 - Auto PR
 - Cross-run long-term role memory store
+
+## Chat → Team import
+
+UI-only flow (no new runtime truth type):
+
+1. User discusses in Chat (skills such as grill-me / team-goal).
+2. Assistant emits a fenced `goal_spec` block (same shape as Goal Coach).
+3. **Publish to Team** extracts GoalSpec from session messages via `extractGoalSpecFromMessages`.
+4. Human confirms form → existing `POST /api/team-runs` with strong Goal Spec.
+
+Repo skill pack: `skills/team-goal/SKILL.md` (also installable under `~/.pi/agent/skills/team-goal`).

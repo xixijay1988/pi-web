@@ -77,6 +77,10 @@ _Avoid_: Calling these the database of record
 User-authored guidance attached to a Team Run for the next planning cycle, also projected to `.team/notes.md`.
 _Avoid_: Chat message to a Worker Role (that is intervention)
 
+**Publish to Team**:
+Chat action that imports a Goal Spec discussed in a single-agent session into a new Team Run (confirm modal, then start engine).
+_Avoid_: Silent auto-start without human confirm of Primary Path / checks
+
 **Goal Coach**:
 A sticky interview agent that helps the human produce a strong Goal Spec before a Team Run starts. Emits a fenced `goal_spec` block that the UI can apply into the create form.
 _Avoid_: Auto-starting the Team Run without human confirm

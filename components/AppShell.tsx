@@ -11,6 +11,10 @@ import { SkillsConfig } from "./SkillsConfig";
 import { PluginsConfig } from "./PluginsConfig";
 import { RolesConfig } from "./RolesConfig";
 import { TeamMode } from "./TeamMode";
+import { PublishTeamRunModal } from "./PublishTeamRunModal";
+import { extractGoalSpecFromMessages } from "@/lib/team-runs/import-from-chat";
+import type { GoalSpec } from "@/lib/team-runs/goal-spec";
+import type { AgentMessage } from "@/lib/types";
 import { BranchNavigator } from "./BranchNavigator";
 import { useTheme } from "@/hooks/useTheme";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -40,6 +44,12 @@ export function AppShell() {
   const [pluginsConfigOpen, setPluginsConfigOpen] = useState(false);
   const [rolesConfigOpen, setRolesConfigOpen] = useState(false);
   const [productMode, setProductMode] = useState<"chat" | "team">("chat");
+  const [selectedTeamRunId, setSelectedTeamRunId] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishCwd, setPublishCwd] = useState<string | null>(null);
+  const [publishDraft, setPublishDraft] = useState<GoalSpec | undefined>(undefined);
+  const [publishNotes, setPublishNotes] = useState<string>("");
+  const [publishWarnings, setPublishWarnings] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarReady, setMobileSidebarReady] = useState(false);
   // On mobile the sidebar is an overlay drawer; hide it by default so the chat
@@ -272,6 +282,26 @@ export function AppShell() {
       router.replace("/", { scroll: false });
     }
   }, [selectedSession, router]);
+
+  const handlePublishToTeam = useCallback((payload: { cwd: string; messages: AgentMessage[] }) => {
+    const imported = extractGoalSpecFromMessages(payload.messages);
+    setPublishCwd(payload.cwd);
+    setPublishDraft(imported.draft);
+    setPublishNotes(imported.notes);
+    setPublishWarnings([
+      ...(imported.draftWarnings ?? []),
+      ...(imported.source === "transcript_only"
+        ? ["No goal_spec block found. Fill the form, or ask the agent to emit a ```goal_spec fence after grill-me."]
+        : []),
+    ]);
+    setPublishOpen(true);
+  }, []);
+
+  const handleTeamPublished = useCallback((runId: string) => {
+    setPublishOpen(false);
+    setSelectedTeamRunId(runId);
+    setProductMode("team");
+  }, []);
 
   const handleOpenTeamSession = useCallback(async (sessionId: string) => {
     try {
@@ -1015,6 +1045,8 @@ export function AppShell() {
           {productMode === "team" ? (
             <TeamMode
               cwd={activeCwd ?? selectedSession?.cwd ?? newSessionCwd}
+              selectedRunId={selectedTeamRunId}
+              onSelectedRunIdChange={setSelectedTeamRunId}
               onOpenSession={handleOpenTeamSession}
               onOpenFile={handleOpenFile}
             />
@@ -1034,6 +1066,7 @@ export function AppShell() {
               onSessionStatsPanelOpen={openSessionStatsPanel}
               onContextUsageChange={handleContextUsageChange}
               onOpenFile={handleOpenLinkedFile}
+              onPublishToTeam={handlePublishToTeam}
             />
           ) : showPlaceholder ? (
             activeCwd ? (
@@ -1125,6 +1158,16 @@ export function AppShell() {
       <RolesConfig
         cwd={activeCwd ?? selectedSession?.cwd ?? newSessionCwd}
         onClose={() => setRolesConfigOpen(false)}
+      />
+    )}
+    {publishOpen && publishCwd && (
+      <PublishTeamRunModal
+        cwd={publishCwd}
+        initial={publishDraft}
+        notes={publishNotes}
+        warnings={publishWarnings}
+        onClose={() => setPublishOpen(false)}
+        onPublished={handleTeamPublished}
       />
     )}
     {pluginsConfigOpen && (activeCwd ?? selectedSession?.cwd ?? newSessionCwd) && (

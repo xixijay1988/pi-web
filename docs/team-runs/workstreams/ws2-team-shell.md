@@ -58,3 +58,9 @@ access to role sessions — even before full autonomy.
 - `POST /api/team-runs/goal-coach` starts/continues a sticky readonly Goal Coach session.
 - Coach emits a fenced `goal_spec` block; UI extracts and can **Apply draft to form**.
 - Does not auto-start the Team Run — human still confirms Goal Spec.
+
+## Chat → Team publish
+
+- Chat button **Publish to Team** scans messages for a `goal_spec` fence (from `team-goal` skill or any assistant output).
+- Modal confirms Goal Spec and `POST /api/team-runs` with `start: true`.
+- Switches product mode to Team and selects the new run.
