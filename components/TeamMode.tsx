@@ -7,6 +7,7 @@ import { useTeamRun } from "@/hooks/useTeamRun";
 import { latestBlockedReason, TeamTimeline } from "./TeamTimeline";
 import { TeamAcceptancePanel } from "./TeamAcceptancePanel";
 import { TeamGoalCoach } from "./TeamGoalCoach";
+import { TeamAlignmentRoom } from "./TeamAlignmentRoom";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 
 function shortenPath(p: string): string {
@@ -266,7 +267,7 @@ export function TeamMode({
           {createMode === "align" && (
             <>
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
-                Discuss with Goal Coach (or Chat), then fill Outcome / Primary Path / ≥3 checks and start.
+                Use Goal Coach (single) or multi-seat Alignment Room, then fill/confirm Outcome / Primary Path / ≥3 checks — or Publish & start from the room.
                 Strong Goal Spec is required to reduce false-green runs.
               </div>
               <TeamGoalCoach
@@ -276,6 +277,18 @@ export function TeamMode({
                 onError={setError}
                 onApplyDraft={applyGoalDraft}
                 onOpenSession={onOpenSession}
+              />
+              <TeamAlignmentRoom
+                cwd={cwd}
+                busy={busy}
+                onBusy={setBusy}
+                onError={setError}
+                onApplyDraft={applyGoalDraft}
+                onOpenSession={onOpenSession}
+                onPublishedRun={(runId) => {
+                  selectRun(runId);
+                  void loadList();
+                }}
               />
             </>
           )}

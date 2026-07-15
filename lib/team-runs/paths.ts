@@ -11,6 +11,18 @@ export function teamRunPath(runId: string, agentDir = getAgentDir()): string {
   return join(teamRunsDir(agentDir), `${runId}.json`);
 }
 
+export function teamAlignmentsDir(agentDir = getAgentDir()): string {
+  return join(agentDir, "team-alignments");
+}
+
+export function teamAlignmentPath(alignmentId: string, agentDir = getAgentDir()): string {
+  return join(teamAlignmentsDir(agentDir), `${alignmentId}.json`);
+}
+
+export function projectAlignmentNotesPath(cwd: string): string {
+  return join(projectTeamDir(cwd), "alignment-notes.md");
+}
+
 export function globalRolesPath(agentDir = getAgentDir()): string {
   return join(agentDir, "team-roles.json");
 }

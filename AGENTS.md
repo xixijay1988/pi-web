@@ -228,6 +228,7 @@ Team is a parallel product mode (Chat | Team); do not rewrite pi session semanti
 ```
 lib/team-runs/                 types, store, validate, plan parse, budgets, roles, engine/
 app/api/team-runs/             CRUD + commands (pause/resume/cancel/accept/reject/rework) + SSE + goal-coach
+app/api/team-alignments/       Alignment Room create/advance/synthesize/publish
 app/api/team-roles/            global + project role template config
 components/TeamMode.tsx        Team list/detail shell
 components/TeamTimeline.tsx    event timeline

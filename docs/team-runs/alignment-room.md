@@ -3,7 +3,7 @@
 > Design for discussing requirements **inside Team** (and with Skills / multiple
 > models) **before** the serial TeamRun Engine starts.
 >
-> Status: **decision-complete for phased delivery** (see ADR 0007). **P0 shipped** (Skills + model on Goal Coach); P1 multi-seat pending.
+> Status: **decision-complete for phased delivery** (see ADR 0007). **P0+P1 shipped** (Skills/model coach + multi-seat serial room); P2 polish pending.
 > Companion: [`README.md`](./README.md), [`contracts.md`](./contracts.md), Chat Publish path.
 
 ## 1. Problem
@@ -261,11 +261,11 @@ TeamRun Engine contracts (budgets, hard validation, serial nodes) stay as-is.
 
 ### P1 — Multi-seat serial room
 
-- [ ] `AlignmentRoom` store under `team-alignments/`
-- [ ] create / message / advance / synthesize / publish APIs
-- [ ] UI room transcript + seat config
-- [ ] default facilitator + architect_critic
-- [ ] publish → existing Team Run create+start
+- [x] `AlignmentRoom` store under `team-alignments/`
+- [x] create / message / advance / synthesize / publish APIs
+- [x] UI room transcript + seat config
+- [x] default facilitator + architect_critic
+- [x] publish → existing Team Run create+start
 
 ### P2 — Hardening / polish
 

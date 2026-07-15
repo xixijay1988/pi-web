@@ -450,15 +450,22 @@ See full design: [`alignment-room.md`](./alignment-room.md) and ADR 0007.
 - Facilitator = Goal Coach path (`POST /api/team-runs/goal-coach`) with `skillNames` + model.
 - No separate `team-alignments/` document required.
 
-### Phase B (multi-seat)
+### Phase B (multi-seat) — implemented
 
-Runtime truth (when implemented):
+Runtime truth:
 
 ```text
 $PI_CODING_AGENT_DIR/team-alignments/<alignmentId>.json
 ```
 
-APIs (target): create room, human message, advance turn, synthesize, publish → existing Team Run create/start.
+| Method | Path | Action |
+| --- | --- | --- |
+| GET | `/api/team-alignments` | list rooms |
+| POST | `/api/team-alignments` | create `{ cwd, idea?, facilitator?, architect?, includeProductCritic? }` |
+| GET | `/api/team-alignments/:id` | load room |
+| POST | `/api/team-alignments/:id` | `{ type: message | advance | synthesize | publish | abandon | export_draft, text?, start? }` |
+
+`publish` validates Goal Spec, creates Team Run (optional engine start), marks room `consumed`, writes `.team/alignment-notes.md`.
 
 Rules:
 

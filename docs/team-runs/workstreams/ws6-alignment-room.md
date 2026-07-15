@@ -26,6 +26,9 @@ models, producing a strong Goal Spec before the TeamRun Engine starts.
 
 ### P1 — Multi-seat serial room
 
+**Status:** implemented (`lib/team-runs/alignment-*`, `/api/team-alignments`, `TeamAlignmentRoom`).
+
+
 - `lib/team-runs/alignment/*` store + types
 - APIs under `/api/team-alignments`
 - UI transcript + seats + advance/synthesize/publish
