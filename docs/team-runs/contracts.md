@@ -314,6 +314,38 @@ Body:
 Response: `{ run: TeamRun }`  
 Creates snapshot, validates Goal Spec (strong by default), writes `.team/goal-spec.md` + `.team/goal.md`, optionally starts engine.
 
+### `POST /api/team-runs/goal-coach`
+
+Body:
+
+```json
+{
+  "cwd": "string",
+  "message": "string",
+  "sessionId": "string?",
+  "sessionFile": "string?",
+  "provider": "string?",
+  "modelId": "string?"
+}
+```
+
+Starts or continues a sticky **Goal Coach** session (readonly tools). Response:
+
+```json
+{
+  "sessionId": "string",
+  "sessionFile": "string",
+  "assistantText": "string",
+  "draft": "GoalSpec?",
+  "draftErrors": ["string"],
+  "draftWarnings": ["string"],
+  "wait": "idle|..."
+}
+```
+
+`draft` is populated when the assistant emits a fenced `goal_spec` block (or full Goal Spec markdown). Does not create a Team Run.
+
+
 ### `GET /api/team-runs/[id]`
 
 Full `TeamRun`.

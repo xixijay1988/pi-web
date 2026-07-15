@@ -1,4 +1,5 @@
 export * from "./goal-spec";
+export * from "./goal-coach";
 export * from "./types";
 export * from "./defaults";
 export * from "./paths";

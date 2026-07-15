@@ -77,6 +77,10 @@ _Avoid_: Calling these the database of record
 User-authored guidance attached to a Team Run for the next planning cycle, also projected to `.team/notes.md`.
 _Avoid_: Chat message to a Worker Role (that is intervention)
 
+**Goal Coach**:
+A sticky interview agent that helps the human produce a strong Goal Spec before a Team Run starts. Emits a fenced `goal_spec` block that the UI can apply into the create form.
+_Avoid_: Auto-starting the Team Run without human confirm
+
 **Goal Spec**:
 Structured create-time description of success: Outcome, Primary Path (how a human opens/uses the result), and ≥3 acceptance checks. Stored as `.team/goal-spec.md` and on the TeamRun as `goalSpec`. Strong Goal Spec is required by default to reduce false-green runs.
 _Avoid_: One-line goal only, goal that omits the real human path

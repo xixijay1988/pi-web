@@ -6,6 +6,8 @@ import type { TeamRunListItem } from "@/lib/team-runs/types";
 import { useTeamRun } from "@/hooks/useTeamRun";
 import { latestBlockedReason, TeamTimeline } from "./TeamTimeline";
 import { TeamAcceptancePanel } from "./TeamAcceptancePanel";
+import { TeamGoalCoach } from "./TeamGoalCoach";
+import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 
 function shortenPath(p: string): string {
   return p.replace(/^\/(?:Users|home)\/[^/]+/, "~");
@@ -139,6 +141,16 @@ export function TeamMode({
     }
   };
 
+  const applyGoalDraft = (draft: GoalSpec) => {
+    setOutcome(draft.outcome || "");
+    setPrimaryPath(draft.primaryPath || "");
+    setAcceptanceText((draft.acceptanceChecks || []).map((c, i) => `${i + 1}. ${c}`).join("\n"));
+    if (draft.constraints) setConstraints(draft.constraints);
+    if (draft.outOfScope) setOutOfScope(draft.outOfScope);
+    if (draft.notes) setAlignDraft(draft.notes);
+    setError(null);
+  };
+
   const command = async (type: string, text?: string) => {
     if (!selectedId) return;
     setBusy(true);
@@ -237,10 +249,20 @@ export function TeamMode({
           )}
 
           {createMode === "align" && (
-            <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
-              Draft with an agent in Chat if needed, then paste the agreed Outcome / Primary Path / checks here before start.
-              Strong Goal Spec is required to reduce false-green runs.
-            </div>
+            <>
+              <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
+                Discuss with Goal Coach (or Chat), then fill Outcome / Primary Path / ≥3 checks and start.
+                Strong Goal Spec is required to reduce false-green runs.
+              </div>
+              <TeamGoalCoach
+                cwd={cwd}
+                busy={busy}
+                onBusy={setBusy}
+                onError={setError}
+                onApplyDraft={applyGoalDraft}
+                onOpenSession={onOpenSession}
+              />
+            </>
           )}
 
           <Field label="Outcome *">
@@ -275,7 +297,7 @@ export function TeamMode({
               <textarea
                 value={alignDraft}
                 onChange={(e) => setAlignDraft(e.target.value)}
-                placeholder="Paste key decisions from Chat alignment..."
+                placeholder="Paste extra decisions / coach notes..."
                 rows={3}
                 style={fieldStyle}
               />

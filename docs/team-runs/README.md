@@ -37,7 +37,7 @@ Team create requires a **strong Goal Spec** by default:
 
 This is written to `.team/goal-spec.md`, injected into Dispatch Briefs, and enforced by hard validators on contract / test-report / acceptance artifacts (`primary_path_verified: true` on pass).
 
-UI: **Align then start** | **Quick form** → **Confirm Goal Spec & start**. Live Goal-coach chat and Chat Skill import are later slices.
+UI: **Align then start** (embedded **Goal Coach** agent) | **Quick form** → **Confirm Goal Spec & start**. Chat Skill import remains a later slice.
 
 ## Non-negotiables (do not "simplify away")
 

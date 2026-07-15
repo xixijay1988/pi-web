@@ -52,3 +52,9 @@ access to role sessions — even before full autonomy.
 - Create form collects Outcome / Primary Path / ≥3 acceptance checks (Align then start | Quick form).
 - API rejects weak goals when `requireStrongGoal` is true (default).
 - Optional later: live Goal-coach Agent session; Chat skill import into Team.
+
+## Goal Coach (P1.5)
+
+- `POST /api/team-runs/goal-coach` starts/continues a sticky readonly Goal Coach session.
+- Coach emits a fenced `goal_spec` block; UI extracts and can **Apply draft to form**.
+- Does not auto-start the Team Run — human still confirms Goal Spec.
