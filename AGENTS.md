@@ -194,6 +194,61 @@ Location: `~/.pi/agent/sessions/<encoded-cwd>/<timestamp>_<uuid>.jsonl`
 
 ---
 
+
+
+## Team Runs (multi-role)
+
+Multi-model / multi-role work organization on top of existing single-session Chat.
+Team is a parallel product mode (Chat | Team); do not rewrite pi session semantics.
+
+### Must-read docs before coding
+
+| Doc | Purpose |
+| --- | --- |
+| `docs/team-runs/README.md` | Agent entrypoint, non-negotiables, parallel work order |
+| `docs/team-runs.md` | Full design blueprint (engine loop, phases, defaults) |
+| `docs/team-runs/CONTEXT.md` | Ubiquitous language (`Team Run`, `roleId`, `Dispatch`, …) |
+| `docs/team-runs/contracts.md` | Stable types, storage paths, API, validation — implement against this |
+| `docs/adr/0001-*.md` … `0006-*.md` | Hard-to-reverse decisions |
+| `docs/team-runs/workstreams/` | Grabbable slices (WS0–WS5) with owned paths |
+| `docs/team-runs/ws0-spike-findings.md` | Runtime spike notes (system prompt, wait pattern) |
+| `docs/team-runs/gitignore-guidance.md` | Whether to commit `.team/` artifacts |
+
+### Handoff / multi-agent rules
+
+- Before large Team Runs work, write or update a **handoff** for the next agent (temp handoff file and/or workstream status in `docs/team-runs/workstreams/*.md`).
+- Do **not** re-debate locked decisions unless a spike forces a contract change; if you change a lock, update `contracts.md` / ADR **in the same change**.
+- Prefer **one workstream per agent**; only edit paths listed in that workstream brief.
+- When docs and code disagree: **ADRs + contracts.md** win for interfaces; update docs in the same PR as behavior changes.
+- Keep design docs current when you land behavior (at least: workstream Implementation status, contracts if API/types change, short note in README non-negotiables if violated then fixed).
+
+### Code map (current)
+
+```
+lib/team-runs/                 types, store, validate, plan parse, budgets, roles, engine/
+app/api/team-runs/             CRUD + commands (pause/resume/cancel/accept/reject/rework) + SSE
+app/api/team-roles/            global + project role template config
+components/TeamMode.tsx        Team list/detail shell
+components/TeamTimeline.tsx    event timeline
+components/TeamAcceptancePanel.tsx  final acceptance + rework feedback
+components/RolesConfig.tsx     role name/model/tool/prompt editor
+hooks/useTeamRun.ts            SSE-backed run subscription
+```
+
+### Runtime traps (Team-specific)
+
+- Runtime truth: `$PI_CODING_AGENT_DIR/team-runs/<id>.json` (not pi jsonl headers).
+- Project artifacts: `<cwd>/.team/**` (versioned step outputs).
+- Engine completion is **server-side** (subscribe + poll); do not rely on browser SSE alone.
+- Sessions may idle-destroy (10 min); store `sessionId` + `sessionFile` and reattach.
+- Role configs are **snapshotted** at run create; editing Roles UI does not mutate in-flight runs.
+- Workers that must create `.team` files need write tools (`team_writer` / `default` / `full`) — `readonly` cannot produce artifacts.
+- Artifact preview via `/api/files` requires `?type=read`.
+- `reject` only marks `blocked`; human-driven improvement uses **`rework`** with feedback text (resets implement→test→review by default).
+- Engine is in-process (fine for `next dev` / long-lived node); not multi-instance serverless.
+
+Do not start coding Team Runs without reading the entrypoint. Prefer one workstream per agent; respect owned paths.
+
 ## CSS Variables (`app/globals.css`)
 
 ```

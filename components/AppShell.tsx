@@ -9,6 +9,8 @@ import { TabBar, type Tab } from "./TabBar";
 import { ModelsConfig } from "./ModelsConfig";
 import { SkillsConfig } from "./SkillsConfig";
 import { PluginsConfig } from "./PluginsConfig";
+import { RolesConfig } from "./RolesConfig";
+import { TeamMode } from "./TeamMode";
 import { BranchNavigator } from "./BranchNavigator";
 import { useTheme } from "@/hooks/useTheme";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -36,6 +38,8 @@ export function AppShell() {
   const [modelsRefreshKey, setModelsRefreshKey] = useState(0);
   const [skillsConfigOpen, setSkillsConfigOpen] = useState(false);
   const [pluginsConfigOpen, setPluginsConfigOpen] = useState(false);
+  const [rolesConfigOpen, setRolesConfigOpen] = useState(false);
+  const [productMode, setProductMode] = useState<"chat" | "team">("chat");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarReady, setMobileSidebarReady] = useState(false);
   // On mobile the sidebar is an overlay drawer; hide it by default so the chat
@@ -269,6 +273,28 @@ export function AppShell() {
     }
   }, [selectedSession, router]);
 
+  const handleOpenTeamSession = useCallback(async (sessionId: string) => {
+    try {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const data = await res.json() as { session?: import("@/lib/types").SessionInfo; path?: string; id?: string; cwd?: string };
+      // sessions/[id] may return context shape — fall back to list hydrate
+      const listRes = await fetch("/api/sessions");
+      const list = await listRes.json() as { sessions?: import("@/lib/types").SessionInfo[] };
+      const session = (list.sessions ?? []).find((s) => s.id === sessionId);
+      if (session) {
+        setProductMode("chat");
+        setSelectedSession(session);
+        setNewSessionCwd(null);
+        setSessionKey((k) => k + 1);
+        router.replace(`?session=${encodeURIComponent(sessionId)}`, { scroll: false });
+      }
+      void data;
+    } catch {
+      // ignore
+    }
+  }, [router]);
+
   const handleOpenFile = useCallback((filePath: string, fileName: string, sourceSessionId?: string | null) => {
     const tabId = `file:${filePath}`;
     setFileTabs((prev) => {
@@ -367,6 +393,19 @@ export function AppShell() {
                 <path d="M15 7V2" />
                 <path d="M6 13V8a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5a6 6 0 0 1-12 0Z" />
                 <path d="M12 19v3" />
+              </svg>
+            ),
+          },
+          {
+            label: "Roles",
+            onClick: () => setRolesConfigOpen(true),
+            disabled: false,
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             ),
           },
@@ -525,7 +564,29 @@ export function AppShell() {
               </svg>
             )}
           </button>
-          <button
+                    <div style={{ display: "flex", alignItems: "center", height: "100%", borderRight: "1px solid var(--border)", padding: "0 6px", gap: 4 }}>
+            {(["chat", "team"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setProductMode(mode)}
+                title={mode === "chat" ? "Chat mode" : "Team mode"}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border)",
+                  background: productMode === mode ? "var(--accent)" : "transparent",
+                  color: productMode === mode ? "#fff" : "var(--text-muted)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textTransform: "capitalize",
+                }}
+              >
+                {mode === "chat" ? "Chat" : "Team"}
+              </button>
+            ))}
+          </div>
+<button
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
@@ -951,7 +1012,13 @@ export function AppShell() {
 
         {/* Chat content */}
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-          {showChat ? (
+          {productMode === "team" ? (
+            <TeamMode
+              cwd={activeCwd ?? selectedSession?.cwd ?? newSessionCwd}
+              onOpenSession={handleOpenTeamSession}
+              onOpenFile={handleOpenFile}
+            />
+          ) : showChat ? (
             <ChatWindow
               key={sessionKey}
               session={selectedSession}
@@ -1053,6 +1120,12 @@ export function AppShell() {
     {modelsConfigOpen && <ModelsConfig onClose={() => { setModelsConfigOpen(false); setModelsRefreshKey((k) => k + 1); }} />}
     {skillsConfigOpen && (activeCwd ?? selectedSession?.cwd ?? newSessionCwd) && (
       <SkillsConfig cwd={(activeCwd ?? selectedSession?.cwd ?? newSessionCwd)!} onClose={() => setSkillsConfigOpen(false)} />
+    )}
+    {rolesConfigOpen && (
+      <RolesConfig
+        cwd={activeCwd ?? selectedSession?.cwd ?? newSessionCwd}
+        onClose={() => setRolesConfigOpen(false)}
+      />
     )}
     {pluginsConfigOpen && (activeCwd ?? selectedSession?.cwd ?? newSessionCwd) && (
       <PluginsConfig
