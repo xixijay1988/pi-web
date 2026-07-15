@@ -206,6 +206,8 @@ Team is a parallel product mode (Chat | Team); do not rewrite pi session semanti
 | Doc | Purpose |
 | --- | --- |
 | `docs/team-runs/README.md` | Agent entrypoint, non-negotiables, parallel work order |
+| `docs/team-runs/HANDOFF.md` | Durable multi-agent handoff |
+| `docs/team-runs/phases/` | Phase status + quality-first next plan |
 | `docs/team-runs/alignment-room.md` | Pre-exec multi-model / Skill discussion (ADR 0007) |
 | `docs/team-runs.md` | Full design blueprint (engine loop, phases, defaults) |
 | `docs/team-runs/CONTEXT.md` | Ubiquitous language (`Team Run`, `roleId`, `Dispatch`, …) |

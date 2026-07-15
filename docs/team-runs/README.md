@@ -18,6 +18,8 @@ reading the full design conversation.
    Types, paths, API shapes, validation rules implementers must not invent.
 5. **Parallel workstreams:** [`workstreams/README.md`](./workstreams/README.md)  
    Independently grabbable slices with ownership boundaries.
+6. **Handoff + phases:** [`HANDOFF.md`](./HANDOFF.md) · [`phases/`](./phases/)  
+   Durable relay pack: current status + quality-first next plan.
 
 ## What we are building (one paragraph)
 

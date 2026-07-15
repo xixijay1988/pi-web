@@ -3,7 +3,7 @@
 > Design for discussing requirements **inside Team** (and with Skills / multiple
 > models) **before** the serial TeamRun Engine starts.
 >
-> Status: **decision-complete for phased delivery** (see ADR 0007). **P0+P1 shipped** (Skills/model coach + multi-seat serial room); P2 polish pending.
+> Status: **decision-complete for phased delivery** (see ADR 0007). **P0+P1 shipped** (full-screen coach workspace + multi-seat room); choice-parser hardened; **P2 polish pending**. Quality gates track is separate (see `phases/`).
 > Companion: [`README.md`](./README.md), [`contracts.md`](./contracts.md), Chat Publish path.
 
 ## 1. Problem
@@ -251,15 +251,16 @@ TeamRun Engine contracts (budgets, hard validation, serial nodes) stay as-is.
 
 ## 11. Phased delivery checklist
 
-### P0 — Facilitator Skills + model (this slice after docs)
+### P0 — Facilitator Skills + model
 
-- [ ] goal-coach API accepts `skillNames`, honors `provider`/`modelId`
-- [ ] load skill bodies and inject into facilitator context
-- [ ] TeamGoalCoach UI: model + skill chips
-- [ ] tests for skill injection + still extract `goal_spec`
-- [ ] docs: contracts + this file status note
+- [x] goal-coach API accepts `skillNames`, honors `provider`/`modelId`
+- [x] load skill bodies and inject into facilitator context
+- [x] Full-screen discussion workspace + skill/model rail
+- [x] Clickable lettered choices (not procedural numbered steps)
+- [x] tests + contracts + status notes
 
-### P1 — Multi-seat serial room
+### P1 —
+ Multi-seat serial room
 
 - [x] `AlignmentRoom` store under `team-alignments/`
 - [x] create / message / advance / synthesize / publish APIs

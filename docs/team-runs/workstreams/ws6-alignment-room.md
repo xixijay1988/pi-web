@@ -62,3 +62,8 @@ models, producing a strong Goal Spec before the TeamRun Engine starts.
 
 - P0: Team Align can attach grill-me/team-goal + model and produce Goal Spec
 - P1: ≥2 models visible in one alignment transcript before start
+
+## Relay
+
+- Status snapshot: [`../phases/phase-status.md`](../phases/phase-status.md)
+- Next work: [`../phases/next-plan.md`](../phases/next-plan.md) (quality queue precedes Alignment P2)
