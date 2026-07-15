@@ -1,0 +1,71 @@
+appId: com.xixijay.pi-desktop
+productName: Pi Desktop
+copyright: Copyright © Pi Desktop contributors
+electronLanguages:
+  - en-US
+  - zh-CN
+
+directories:
+  output: desktop/dist
+  buildResources: desktop/resources
+
+files:
+  - desktop/main.js
+  - desktop/preload.js
+  - package.json
+
+extraMetadata:
+  main: desktop/main.js
+
+extraResources:
+  - from: .next
+    to: web/.next
+    filter:
+      - "**/*"
+      - "!cache/**/*"
+      - "!dev/**/*"
+      - "!**/*.js.map"
+  - from: node_modules
+    to: web/node_modules
+    filter:
+      - "**/*"
+      - "!electron/**/*"
+      - "!electron-builder/**/*"
+      - "!electron-builder-squirrel-windows/**/*"
+      - "!@electron/**/*"
+      - "!app-builder-bin/**/*"
+      - "!app-builder-lib/**/*"
+      - "!builder-util/**/*"
+      - "!builder-util-runtime/**/*"
+      - "!dmg-builder/**/*"
+  - from: package.json
+    to: web/package.json
+  - from: next.config.ts
+    to: web/next.config.ts
+
+asar: true
+
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+
+win:
+  target:
+    - nsis
+    - zip
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+linux:
+  target:
+    - AppImage
+  category: Development

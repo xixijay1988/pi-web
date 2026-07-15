@@ -25,6 +25,26 @@ pi-web
 
 Then open [http://localhost:30141](http://localhost:30141). The CLI will try to open the browser automatically after the server is ready.
 
+## Pi Desktop (this fork)
+
+This fork can also run as a local **Pi Desktop** Electron app. The web UI remains the same codebase; desktop code lives in `desktop/`.
+
+```bash
+npm install
+npm run dev            # terminal 1 — http://127.0.0.1:30141
+npm run desktop:dev    # terminal 2 — Electron window
+```
+
+Package installers locally:
+
+```bash
+npm run desktop:pack:mac
+npm run desktop:pack:win
+```
+
+Details: [docs/desktop.md](./docs/desktop.md).
+
+
 **Options:**
 
 ```bash

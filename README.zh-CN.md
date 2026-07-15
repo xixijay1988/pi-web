@@ -21,6 +21,26 @@ pi-web
 
 启动后打开 [http://localhost:30141](http://localhost:30141)。命令行版本会在服务就绪后尝试自动打开浏览器。
 
+## Pi Desktop（本 fork）
+
+本 fork 可额外打包为本地 **Pi Desktop** Electron 应用。Web UI 仍使用仓库根目录源码，桌面壳在 `desktop/`。
+
+```bash
+npm install
+npm run dev            # 终端 1 — http://127.0.0.1:30141
+npm run desktop:dev    # 终端 2 — Electron 窗口
+```
+
+本地打包：
+
+```bash
+npm run desktop:pack:mac
+npm run desktop:pack:win
+```
+
+详见 [docs/desktop.md](./docs/desktop.md)。
+
+
 **可选参数：**
 
 ```bash
