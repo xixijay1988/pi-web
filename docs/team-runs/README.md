@@ -13,7 +13,7 @@ reading the full design conversation.
 2. **Domain language:** [`CONTEXT.md`](./CONTEXT.md)  
    Canonical terms. Prefer these names in code, APIs, UI, and issues.
 3. **ADRs (why we chose this):** [`../adr/`](../adr/)  
-   Hard-to-reverse decisions only.
+   Hard-to-reverse decisions only. Includes ADR 0007 Alignment Room.
 4. **Contracts (stable interfaces):** [`contracts.md`](./contracts.md)  
    Types, paths, API shapes, validation rules implementers must not invent.
 5. **Parallel workstreams:** [`workstreams/README.md`](./workstreams/README.md)  
@@ -40,6 +40,15 @@ This is written to `.team/goal-spec.md`, injected into Dispatch Briefs, and enfo
 UI: **Align then start** (embedded **Goal Coach**) | **Quick form** → **Confirm Goal Spec & start**.
 
 **Chat → Team:** use skills like `grill-me` / `team-goal` in Chat, then **Publish to Team** (extracts `goal_spec` fence, confirms form, starts Team Run).
+
+## Alignment Room (Team-side multi-model discussion)
+
+Pre-execution discussion inside Team (Skills + optional multiple models) that **only** produces a Goal Spec, then hands off to the existing serial engine.
+
+- Design: [`alignment-room.md`](./alignment-room.md)
+- ADR: [`../adr/0007-alignment-room-before-execute.md`](../adr/0007-alignment-room-before-execute.md)
+- Phases: **P0** facilitator Skills+model → **P1** multi-seat serial room → **P2** polish; peer channels deferred
+
 
 ## Non-negotiables (do not "simplify away")
 

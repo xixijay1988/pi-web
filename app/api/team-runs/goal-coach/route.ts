@@ -9,6 +9,11 @@ import {
   extractGoalSpecFromCoachText,
   goalCoachSessionName,
 } from "@/lib/team-runs/goal-coach";
+import {
+  formatSkillsForFacilitator,
+  loadSkillBodies,
+  mergeSystemPromptWithSkills,
+} from "@/lib/team-runs/skills-inject";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,12 +25,12 @@ type Body = {
   sessionFile?: unknown;
   provider?: unknown;
   modelId?: unknown;
+  skillNames?: unknown;
 };
 
 /**
  * POST /api/team-runs/goal-coach
- * Start or continue a Goal Coach session that helps draft a strong Goal Spec.
- * Body: { cwd, message, sessionId?, sessionFile?, provider?, modelId? }
+ * Alignment Facilitator (Goal Coach): sticky session, optional Skills + model.
  */
 export async function POST(req: Request) {
   try {
@@ -37,8 +42,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Directory does not exist: ${cwd}` }, { status: 400 });
     }
 
+    const skillNames = Array.isArray(body.skillNames)
+      ? body.skillNames.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    const { skills, missing } = await loadSkillBodies(cwd, skillNames);
+    const skillsBlock = formatSkillsForFacilitator(skills);
+    const systemPrompt = mergeSystemPromptWithSkills(GOAL_COACH_ROLE.systemPrompt, skillsBlock);
+
     const role = {
       ...GOAL_COACH_ROLE,
+      systemPrompt,
       provider: typeof body.provider === "string" ? body.provider : GOAL_COACH_ROLE.provider,
       modelId: typeof body.modelId === "string" ? body.modelId : GOAL_COACH_ROLE.modelId,
     };
@@ -53,7 +67,6 @@ export async function POST(req: Request) {
       sessionFile: existingFile || undefined,
     });
 
-    // Best-effort name for sidebar grouping / recognition
     try {
       await ensured.session.send({ type: "set_session_name", name: goalCoachSessionName() });
     } catch {
@@ -62,13 +75,19 @@ export async function POST(req: Request) {
 
     const isKickoff = !existingId;
     const promptText = isKickoff
-      ? buildGoalCoachKickoffMessage(message)
+      ? buildGoalCoachKickoffMessage(message, { skillNames: skills.map((s) => s.name) })
       : buildGoalCoachFollowUpMessage(message);
     if (!promptText.trim()) {
       return NextResponse.json({ error: "message required for follow-up" }, { status: 400 });
     }
 
-    await ensured.session.send({ type: "prompt", message: promptText });
+    // On kickoff with skills, prepend a short system-visible note in the user turn if injection was empty
+    const fullPrompt =
+      isKickoff && skillsBlock
+        ? `${promptText}\n\n(Skill instructions were also attached to your system context.)`
+        : promptText;
+
+    await ensured.session.send({ type: "prompt", message: fullPrompt });
     const wait = await waitForSessionIdle(ensured.session, {
       isCurrent: () => ensured.session.isAlive(),
       timeoutMs: 10 * 60 * 1000,
@@ -80,6 +99,7 @@ export async function POST(req: Request) {
           sessionId: ensured.sessionId,
           sessionFile: ensured.sessionFile,
           wait,
+          missingSkills: missing,
         },
         { status: 504 },
       );
@@ -91,6 +111,7 @@ export async function POST(req: Request) {
           sessionId: ensured.sessionId,
           sessionFile: ensured.sessionFile,
           wait,
+          missingSkills: missing,
         },
         { status: 500 },
       );
@@ -107,6 +128,8 @@ export async function POST(req: Request) {
       draft: extracted.draft,
       draftErrors: extracted.errors,
       draftWarnings: extracted.warnings,
+      attachedSkills: skills.map((s) => s.name),
+      missingSkills: missing,
       wait,
     });
   } catch (e) {

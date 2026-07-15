@@ -1,5 +1,6 @@
 export * from "./goal-spec";
 export * from "./goal-coach";
+export * from "./skills-inject";
 export * from "./import-from-chat";
 export * from "./types";
 export * from "./defaults";

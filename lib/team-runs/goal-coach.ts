@@ -50,17 +50,26 @@ export const GOAL_COACH_ROLE: RoleTemplate = {
   toolPreset: "readonly",
 };
 
-export function buildGoalCoachKickoffMessage(idea?: string): string {
+export function buildGoalCoachKickoffMessage(
+  idea?: string,
+  opts?: { skillNames?: string[] },
+): string {
   const trimmed = idea?.trim();
+  const skills = (opts?.skillNames ?? []).map((s) => s.trim()).filter(Boolean);
+  const skillLine = skills.length
+    ? `Attached Skills to follow: ${skills.join(", ")}.`
+    : "No extra Skills attached — still produce a strong Goal Spec.";
   if (!trimmed) {
     return [
       "Help me write a strong Goal Spec for a Team Run in this project.",
+      skillLine,
       "Interview me about Outcome, Primary Path (how a human opens/uses it), and ≥3 acceptance checks.",
       "When ready, emit a ```goal_spec fenced block.",
     ].join("\n");
   }
   return [
     "Help me turn this idea into a strong Goal Spec for a Team Run.",
+    skillLine,
     "",
     "## Raw idea",
     trimmed,

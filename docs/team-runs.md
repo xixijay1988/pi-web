@@ -32,6 +32,7 @@ visible event timeline, cost/retry budgets, and crash-safe run state.
 | Top object | Team Run (task package) |
 | Handoffs | Structured artifacts + project `.team/` files |
 | Human gates | Start + final acceptance only |
+| Pre-start discussion | Alignment Room (Skills + multi-model serial seats); see `team-runs/alignment-room.md` |
 | Dispatch brain | Default eng DAG + orchestrator may rewrite |
 | Parallelism | Serial execution; schema keeps dependency edges |
 | Storage | `~/.pi/.../team-runs` = runtime truth; `.team/` = human artifacts |
@@ -51,7 +52,8 @@ visible event timeline, cost/retry budgets, and crash-safe run state.
 
 ### Non-goals (v1)
 
-- Peer role channels / mutual @ (Raft-B)
+- Peer role channels / mutual @ among **executing** workers (Raft-B)
+- Free-form multi-agent chat as a substitute for Goal Spec + engine
 - True parallel writers
 - OpenSquilla-style step-level model routing
 - Path-level write ACL matrix

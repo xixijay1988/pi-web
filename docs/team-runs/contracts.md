@@ -325,11 +325,14 @@ Body:
   "sessionId": "string?",
   "sessionFile": "string?",
   "provider": "string?",
-  "modelId": "string?"
+  "modelId": "string?",
+  "skillNames": ["grill-me", "team-goal"]
 }
 ```
 
-Starts or continues a sticky **Goal Coach** session (readonly tools). Response:
+Starts or continues a sticky **Goal Coach** / Alignment Facilitator session (readonly tools).
+`skillNames` (optional) loads matching Skills for `cwd` via the same resource loader as `/api/skills` and injects their bodies into the facilitator context.
+Response:
 
 ```json
 {
@@ -437,3 +440,28 @@ UI-only flow (no new runtime truth type):
 4. Human confirms form → existing `POST /api/team-runs` with strong Goal Spec.
 
 Repo skill pack: `skills/team-goal/SKILL.md` (also installable under `~/.pi/agent/skills/team-goal`).
+
+## Alignment Room
+
+See full design: [`alignment-room.md`](./alignment-room.md) and ADR 0007.
+
+### Phase A (current target after P0)
+
+- Facilitator = Goal Coach path (`POST /api/team-runs/goal-coach`) with `skillNames` + model.
+- No separate `team-alignments/` document required.
+
+### Phase B (multi-seat)
+
+Runtime truth (when implemented):
+
+```text
+$PI_CODING_AGENT_DIR/team-alignments/<alignmentId>.json
+```
+
+APIs (target): create room, human message, advance turn, synthesize, publish → existing Team Run create/start.
+
+Rules:
+
+- Alignment does not succeed Plan Nodes or write execution step artifacts.
+- Publishing still requires strong Goal Spec validation.
+- Serial participant turns by default; peer @ among workers remains out of scope.

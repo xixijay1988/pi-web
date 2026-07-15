@@ -18,6 +18,7 @@ WS0 domain + spike
    ├── WS2 team shell
    │     └── (both feed)
    └── WS3 engine ──────────► WS4 timeline/acceptance UX ──► WS5 hardening
+   └── WS6 alignment room (P0 on Goal Coach; P1 multi-seat) ──► publish Goal Spec ──► engine
 ```
 
 WS1 and WS2 may proceed in parallel after WS0 lands types/store helpers.
@@ -32,6 +33,7 @@ WS1 and WS2 may proceed in parallel after WS0 lands types/store helpers.
 | WS3 | [Engine](./ws3-engine.md) | After spike |
 | WS4 | [Timeline + acceptance](./ws4-timeline-acceptance.md) | After engine events |
 | WS5 | [Hardening](./ws5-hardening.md) | After golden path |
+| WS6 | [Alignment Room](./ws6-alignment-room.md) | After Goal Spec; P0 then P1 |
 
 ## Coordination rules
 

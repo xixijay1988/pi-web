@@ -77,6 +77,18 @@ _Avoid_: Calling these the database of record
 User-authored guidance attached to a Team Run for the next planning cycle, also projected to `.team/notes.md`.
 _Avoid_: Chat message to a Worker Role (that is intervention)
 
+**Alignment Room**:
+Pre-execution discussion space (possibly multi-seat, multi-model, with Skills) that produces a Goal Spec before the TeamRun Engine starts. Does not execute Plan Nodes.
+_Avoid_: Treating alignment chat as the execution engine; peer worker channels (deferred)
+
+**Alignment Participant / Seat**:
+One role seat inside an Alignment Room with its own model, prompt, tools, and optional skillNames. Distinct from execution Role Snapshot identity even when seeded from the same template.
+_Avoid_: Plan Node, Worker Role (execution terms)
+
+**Alignment Turn**:
+One serial dispatch to a single Alignment Participant within a room.
+_Avoid_: Dispatch (engine term for Plan Node attempts) without qualification
+
 **Publish to Team**:
 Chat action that imports a Goal Spec discussed in a single-agent session into a new Team Run (confirm modal, then start engine).
 _Avoid_: Silent auto-start without human confirm of Primary Path / checks

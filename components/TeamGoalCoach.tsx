@@ -1,12 +1,26 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 
 type CoachMessage = {
   role: "user" | "assistant";
   text: string;
 };
+
+type SkillOption = {
+  name: string;
+  description: string;
+  disableModelInvocation?: boolean;
+};
+
+type ModelOption = {
+  id: string;
+  name: string;
+  provider: string;
+};
+
+const PRESET_SKILLS = ["grill-me", "team-goal", "grilling"] as const;
 
 export function TeamGoalCoach({
   cwd,
@@ -31,12 +45,79 @@ export function TeamGoalCoach({
   const [draft, setDraft] = useState<GoalSpec | null>(null);
   const [draftErrors, setDraftErrors] = useState<string[]>([]);
   const [localBusy, setLocalBusy] = useState(false);
+  const [skills, setSkills] = useState<SkillOption[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(["grill-me", "team-goal"]);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [provider, setProvider] = useState("");
+  const [modelId, setModelId] = useState("");
+  const [missingSkills, setMissingSkills] = useState<string[]>([]);
 
   const running = busy || localBusy;
 
   const setBusy = (v: boolean) => {
     setLocalBusy(v);
     onBusy(v);
+  };
+
+  useEffect(() => {
+    if (!cwd) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [skillsRes, modelsRes] = await Promise.all([
+          fetch(`/api/skills?cwd=${encodeURIComponent(cwd)}`),
+          fetch(`/api/models?cwd=${encodeURIComponent(cwd)}`),
+        ]);
+        const skillsData = (await skillsRes.json()) as { skills?: SkillOption[]; error?: string };
+        const modelsData = (await modelsRes.json()) as {
+          modelList?: ModelOption[];
+          defaultModel?: { provider?: string; modelId?: string };
+        };
+        if (cancelled) return;
+        const list = skillsData.skills ?? [];
+        setSkills(list);
+        // Keep presets that exist; if none exist yet, still show selected for user awareness
+        setSelectedSkills((prev) => {
+          const names = new Set(list.map((s) => s.name));
+          const kept = prev.filter((n) => names.has(n));
+          if (kept.length > 0) return kept;
+          const availablePresets = PRESET_SKILLS.filter((n) => names.has(n));
+          return availablePresets.length ? [...availablePresets] : prev;
+        });
+        const modelList = modelsData.modelList ?? [];
+        setModels(modelList);
+        if (modelsData.defaultModel?.provider && modelsData.defaultModel?.modelId) {
+          setProvider(modelsData.defaultModel.provider);
+          setModelId(modelsData.defaultModel.modelId);
+        } else if (modelList[0]) {
+          setProvider(modelList[0].provider);
+          setModelId(modelList[0].id);
+        }
+      } catch {
+        // non-fatal; coach can still run with session defaults
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cwd]);
+
+  const skillChoices = useMemo(() => {
+    const byName = new Map(skills.map((s) => [s.name, s]));
+    const names = [
+      ...PRESET_SKILLS,
+      ...skills.map((s) => s.name).filter((n) => !PRESET_SKILLS.includes(n as (typeof PRESET_SKILLS)[number])),
+    ];
+    return [...new Set(names)].map((name) => byName.get(name) ?? { name, description: "" });
+  }, [skills]);
+
+  const modelValue = provider && modelId ? `${provider}:::${modelId}` : "";
+
+  const toggleSkill = (name: string) => {
+    if (sessionId) return; // lock skills for sticky session after start (P0 simplicity)
+    setSelectedSkills((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
   };
 
   const send = async (mode: "start" | "continue") => {
@@ -59,7 +140,7 @@ export function TeamGoalCoach({
     try {
       const userVisible =
         mode === "start"
-          ? text || "(Start Goal Coach interview for this project)"
+          ? text || `(Start alignment with skills: ${selectedSkills.join(", ") || "none"})`
           : text;
       setMessages((prev) => [...prev, { role: "user", text: userVisible }]);
       if (mode === "start") setIdea("");
@@ -71,6 +152,8 @@ export function TeamGoalCoach({
         body: JSON.stringify({
           cwd,
           message: text,
+          skillNames: mode === "start" ? selectedSkills : undefined,
+          ...(provider && modelId ? { provider, modelId } : {}),
           ...(mode === "continue" && sessionId
             ? { sessionId, sessionFile: sessionFile ?? undefined }
             : {}),
@@ -83,11 +166,14 @@ export function TeamGoalCoach({
         assistantText?: string;
         draft?: GoalSpec;
         draftErrors?: string[];
+        missingSkills?: string[];
+        attachedSkills?: string[];
       };
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       if (data.sessionId) setSessionId(data.sessionId);
       if (data.sessionFile) setSessionFile(data.sessionFile);
+      setMissingSkills(data.missingSkills ?? []);
       const assistantText = (data.assistantText ?? "").trim() || "(empty model response)";
       setMessages((prev) => [...prev, { role: "assistant", text: assistantText }]);
       setDraft(data.draft ?? null);
@@ -101,9 +187,81 @@ export function TeamGoalCoach({
 
   return (
     <div style={{ marginBottom: 10, padding: 8, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Goal Coach</div>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Alignment · Goal Coach</div>
       <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.4 }}>
-        Discuss with an agent first. When a valid Goal Spec appears, apply it into the form and start.
+        P0: single facilitator with Skills + model. Multi-seat room is next (see Alignment Room docs).
+      </div>
+
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Skills</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {skillChoices.slice(0, 12).map((s) => {
+            const on = selectedSkills.includes(s.name);
+            return (
+              <button
+                key={s.name}
+                type="button"
+                disabled={running || Boolean(sessionId)}
+                title={s.description || s.name}
+                onClick={() => toggleSkill(s.name)}
+                style={{
+                  padding: "3px 8px",
+                  borderRadius: 999,
+                  border: "1px solid var(--border)",
+                  background: on ? "var(--accent)" : "transparent",
+                  color: on ? "#fff" : "var(--text-muted)",
+                  fontSize: 11,
+                  cursor: running || sessionId ? "not-allowed" : "pointer",
+                  opacity: running || sessionId ? 0.7 : 1,
+                }}
+              >
+                {s.name}
+              </button>
+            );
+          })}
+        </div>
+        {sessionId && (
+          <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 4 }}>
+            Skills locked for this sticky session.
+          </div>
+        )}
+        {missingSkills.length > 0 && (
+          <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 4 }}>
+            Missing skills: {missingSkills.join(", ")}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Model</div>
+        <select
+          value={modelValue}
+          disabled={running || Boolean(sessionId) || models.length === 0}
+          onChange={(e) => {
+            const [p, id] = e.target.value.split(":::");
+            setProvider(p || "");
+            setModelId(id || "");
+          }}
+          style={{
+            width: "100%",
+            padding: "6px 8px",
+            borderRadius: 6,
+            border: "1px solid var(--border)",
+            background: "var(--bg)",
+            color: "var(--text)",
+            fontSize: 12,
+          }}
+        >
+          {models.length === 0 ? (
+            <option value="">Session default model</option>
+          ) : (
+            models.map((m) => (
+              <option key={`${m.provider}/${m.id}`} value={`${m.provider}:::${m.id}`}>
+                {m.provider} / {m.name || m.id}
+              </option>
+            ))
+          )}
+        </select>
       </div>
 
       {messages.length > 0 && (
@@ -136,7 +294,7 @@ export function TeamGoalCoach({
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            placeholder="Raw idea (optional) — or leave blank to start an interview"
+            placeholder="Raw idea (optional) — or leave blank to start grill-style interview"
             rows={3}
             style={inputStyle}
             disabled={running || !cwd}
@@ -146,7 +304,7 @@ export function TeamGoalCoach({
             disabled={running || !cwd}
             style={btnStyle(running || !cwd)}
           >
-            {running ? "Coach thinking…" : "Start Goal Coach"}
+            {running ? "Coach thinking…" : "Start alignment"}
           </button>
         </>
       ) : (
@@ -171,7 +329,13 @@ export function TeamGoalCoach({
               <button
                 onClick={() => onOpenSession(sessionId)}
                 disabled={running}
-                style={{ ...btnStyle(running), flex: "0 0 auto", background: "transparent", color: "var(--text-muted)", border: "1px solid var(--border)" }}
+                style={{
+                  ...btnStyle(running),
+                  flex: "0 0 auto",
+                  background: "transparent",
+                  color: "var(--text-muted)",
+                  border: "1px solid var(--border)",
+                }}
               >
                 Open chat
               </button>
@@ -196,7 +360,11 @@ export function TeamGoalCoach({
           <button
             onClick={() => onApplyDraft(draft)}
             disabled={running}
-            style={{ ...btnStyle(running), marginTop: 6, background: draftErrors.length === 0 ? "var(--accent)" : "#64748b" }}
+            style={{
+              ...btnStyle(running),
+              marginTop: 6,
+              background: draftErrors.length === 0 ? "var(--accent)" : "#64748b",
+            }}
           >
             Apply draft to form
           </button>
