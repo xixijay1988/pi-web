@@ -14,6 +14,7 @@ This document is the **stage report** for humans and successor agents. It record
 | Alignment P1 (multi-seat serial) | **Shipped** | APIs + sidebar advanced UI |
 | Chat → Publish to Team | **Shipped** | extract `goal_spec` + confirm modal |
 | Quality gates / anti false-green | **Shipped (v1)** | validators + brief rework + acceptance checklist |
+| Q1 Structured rework | **Shipped** | `lastRework` + `.team/notes.md` + brief FAIL checks |
 | Alignment P2 polish | **Pending** | streaming, history, multi-seat full-screen |
 | Execution peer channels | **Deferred** | ADR 0007 / ADR 0002 |
 
@@ -94,6 +95,7 @@ Hard validation:
 Dispatch:
 - Goal Spec acceptance checks in brief  
 - Latest human **rework/reject notes** injected as MUST address  
+- **Q1:** structured `lastRework` / `failedChecks` + `.team/notes.md` + brief `[FAIL]` injection
 - Per-role hardExpectations expanded  
 
 Human acceptance UI:

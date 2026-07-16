@@ -168,7 +168,11 @@ export function TeamMode({
     setError(null);
   };
 
-  const command = async (type: string, text?: string) => {
+  const command = async (
+    type: string,
+    text?: string,
+    extra?: { failedChecks?: string[]; resetFrom?: string },
+  ) => {
     if (!selectedId) return;
     setBusy(true);
     setError(null);
@@ -176,7 +180,12 @@ export function TeamMode({
       const res = await fetch(`/api/team-runs/${encodeURIComponent(selectedId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, text }),
+        body: JSON.stringify({
+          type,
+          text,
+          failedChecks: extra?.failedChecks,
+          resetFrom: extra?.resetFrom,
+        }),
       });
       const d = await res.json() as { run?: typeof run; error?: string };
       if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
@@ -490,7 +499,9 @@ export function TeamMode({
                     run={run}
                     busy={busy}
                     onAccept={() => void command("accept")}
-                    onReject={(feedback) => void command("rework", feedback)}
+                    onReject={(payload) =>
+                      void command("rework", payload.text, { failedChecks: payload.failedChecks })
+                    }
                     onOpenFile={onOpenFile ? (path) => onOpenFile(path, getFileName(path)) : undefined}
                   />
                 )}

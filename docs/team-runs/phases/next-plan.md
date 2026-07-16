@@ -18,7 +18,7 @@ Do not expand into peer channels or parallel execution unless explicitly request
 
 ## Queue (ordered)
 
-### Q1 — Structured rework loop (high value, medium size)
+### Q1 — Structured rework loop (high value, medium size) — **DONE**
 
 **Problem:** rework text is freeform; failed checklist items exist only in the acceptance UI click state unless the user wrote them into feedback (partially auto-merged already).
 
@@ -35,6 +35,8 @@ Do not expand into peer channels or parallel execution unless explicitly request
 - `docs/team-runs/contracts.md`  
 
 **Done when:** after rework, implementer dispatch always contains the failed Goal Spec checks even if the human typed minimal extra text.
+
+**Landed:** `lastRework` on TeamRun; `POST rework` accepts `failedChecks[]`; appends `.team/notes.md`; brief/orchestrator inject structured `[FAIL]` checks; acceptance UI sends checklist fails separately from free text; unit coverage in `team-runs.test.mjs`.
 
 ---
 

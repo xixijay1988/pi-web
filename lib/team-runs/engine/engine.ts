@@ -212,6 +212,18 @@ export class TeamRunEngine {
         ``,
         `You may inspect the repository. Only write under .team/. Do not edit business source files.`,
         opts?.replan ? `This is a replan. Prefer addressing the latest human rework notes / rejection feedback. Keep roleIds valid.` : ``,
+        current.lastRework
+          ? [
+              `## Latest structured rework (MUST address)`,
+              `Failed Goal Spec checks:`,
+              ...(current.lastRework.failedChecks.length
+                ? current.lastRework.failedChecks.map((c) => `- [FAIL] ${c}`)
+                : [`- (none marked)`]),
+              current.lastRework.text.trim() ? `Feedback:\n${current.lastRework.text.trim()}` : ``,
+              current.lastRework.resetFrom ? `Reset from: ${current.lastRework.resetFrom}` : ``,
+              `Also read \`.team/notes.md\` if present.`,
+            ].filter(Boolean).join("\n")
+          : ``,
         current.humanNotes.length
           ? `## Human notes\n${current.humanNotes.map((n) => `- ${n.text}`).join("\n")}`
           : ``,

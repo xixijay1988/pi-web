@@ -95,6 +95,13 @@ export type RunEvent = {
   data?: Record<string, unknown>;
 };
 
+export type LastRework = {
+  at: string;
+  text: string;
+  failedChecks: string[];
+  resetFrom?: string;
+};
+
 export type TeamRun = {
   id: string;
   cwd: string;
@@ -110,6 +117,8 @@ export type TeamRun = {
     rawPlanPath: string;
   };
   humanNotes: { at: string; text: string }[];
+  /** Latest structured human rework payload (acceptance checklist failures + free text). */
+  lastRework?: LastRework;
   events: RunEvent[];
   createdAt: string;
   updatedAt: string;

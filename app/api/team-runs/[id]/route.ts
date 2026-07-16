@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   appendRunEvent,
+  applyStructuredRework,
   canTransitionRun,
   readTeamRun,
   writeTeamRun,
@@ -28,7 +29,12 @@ export async function POST(req: Request, ctx: Ctx) {
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   try {
-    const body = await req.json() as { type?: unknown; text?: unknown; resetFrom?: unknown };
+    const body = await req.json() as {
+      type?: unknown;
+      text?: unknown;
+      resetFrom?: unknown;
+      failedChecks?: unknown;
+    };
     const type = typeof body.type === "string" ? body.type : "";
 
     let run = existing;
@@ -95,11 +101,27 @@ export async function POST(req: Request, ctx: Ctx) {
           );
         }
         const text = typeof body.text === "string" ? body.text.trim() : "";
-        if (!text) {
-          return NextResponse.json({ error: "text required: describe what to improve" }, { status: 400 });
+        const failedChecks = Array.isArray(body.failedChecks)
+          ? body.failedChecks.filter((c): c is string => typeof c === "string").map((c) => c.trim()).filter(Boolean)
+          : [];
+        if (!text && failedChecks.length === 0) {
+          return NextResponse.json(
+            { error: "text or failedChecks required: describe what to improve" },
+            { status: 400 },
+          );
         }
-        const at = new Date().toISOString();
         const resetFrom = typeof body.resetFrom === "string" && body.resetFrom.trim() ? body.resetFrom.trim() : "implement";
+        let noteText = text;
+        try {
+          const applied = applyStructuredRework(run, { text, failedChecks, resetFrom });
+          run = applied.run;
+          noteText = applied.noteText;
+        } catch (err) {
+          return NextResponse.json(
+            { error: err instanceof Error ? err.message : String(err) },
+            { status: 400 },
+          );
+        }
         const nodes = run.plan.nodes.map((n) => {
           const shouldReset = shouldResetNode(n.id, n.roleId, resetFrom);
           if (!shouldReset) return n;
@@ -114,15 +136,14 @@ export async function POST(req: Request, ctx: Ctx) {
         });
         run = {
           ...run,
-          humanNotes: [...run.humanNotes, { at, text: `Rework requested: ${text}` }],
           plan: { ...run.plan, nodes },
           status: "replanning",
         };
         writeTeamRun(run);
         run = appendRunEvent(run, {
           type: "replan_started",
-          message: `Human rework: ${text.slice(0, 300)}`,
-          data: { resetFrom },
+          message: `Human rework: ${noteText.slice(0, 300)}`,
+          data: { resetFrom, failedChecks, notesPath: ".team/notes.md" },
         });
         resumeTeamRunEngine(id);
         break;

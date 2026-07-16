@@ -36,15 +36,7 @@ export function buildDispatchBrief(input: {
           `Read \`.team/goal-spec.md\` / \`.team/goal.md\` if present for Primary Path and acceptance checks.`,
           ``,
         ]),
-    ...(reworkNotes.length
-      ? [
-          `## Human rework / notes (MUST address)`,
-          ...reworkNotes.map((n) => `- ${n}`),
-          ``,
-          `Prioritize fixing these issues on the Primary Path before adding new scope.`,
-          ``,
-        ]
-      : []),
+    ...formatReworkSection(run, reworkNotes),
     `## This node`,
     `- node id: \`${node.id}\``,
     `- title: ${node.title}`,
@@ -90,4 +82,44 @@ export function latestReworkNotes(run: TeamRun, limit = 5): string[] {
     .slice(0, limit)
     .map((n) => n.text.trim())
     .filter(Boolean);
+}
+
+/** Structured lastRework + freeform notes for worker briefs. */
+export function formatReworkSection(run: TeamRun, reworkNotes: string[]): string[] {
+  const last = run.lastRework;
+  if (!last && reworkNotes.length === 0) return [];
+
+  const lines: string[] = [
+    `## Human rework / notes (MUST address)`,
+  ];
+
+  if (last) {
+    lines.push(`### Latest structured rework (${last.at})`);
+    lines.push(`Failed Goal Spec checks:`);
+    if (last.failedChecks.length) {
+      for (const c of last.failedChecks) lines.push(`- [FAIL] ${c}`);
+    } else {
+      lines.push(`- (none marked in checklist)`);
+    }
+    if (last.text.trim()) {
+      lines.push(``);
+      lines.push(`Feedback:`);
+      lines.push(last.text.trim());
+    }
+    if (last.resetFrom) {
+      lines.push(``);
+      lines.push(`Reset scope: from \`${last.resetFrom}\` onward`);
+    }
+    lines.push(``);
+  }
+
+  if (reworkNotes.length) {
+    if (last) lines.push(`### Recent notes`);
+    for (const n of reworkNotes) lines.push(`- ${n}`);
+    lines.push(``);
+  }
+
+  lines.push(`Prioritize fixing these issues on the Primary Path before adding new scope.`);
+  lines.push(``);
+  return lines;
 }

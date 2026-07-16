@@ -36,7 +36,7 @@ Merge: project entries override global by `roleId`. Unmentioned global roles rem
   goal.md                    # human-facing goal (Goal Spec markdown when present)
   goal-spec.md               # structured Goal Spec (Outcome / Primary Path / checks)
   plan.md
-  notes.md
+  notes.md                 # human notes + structured rework blocks
   roles.json                 # optional project overrides
   steps/
     <NN>-<roleId>/
@@ -160,6 +160,13 @@ export type GoalSpec = {
   notes?: string;
 };
 
+export type LastRework = {
+  at: string;
+  text: string;                 // free-form feedback (may be empty if only failedChecks)
+  failedChecks: string[];       // Goal Spec checklist labels marked fail
+  resetFrom?: string;           // default "implement"
+};
+
 export type TeamRun = {
   id: string;
   cwd: string;
@@ -175,6 +182,7 @@ export type TeamRun = {
     rawPlanPath: string; // usually .team/plan.md
   };
   humanNotes: { at: string; text: string }[];
+  lastRework?: LastRework;   // latest structured acceptance rework
   events: RunEvent[];
   createdAt: string;
   updatedAt: string;
@@ -292,6 +300,7 @@ Every worker dispatch user message must include:
 6. Explicit instruction: do not modify unrelated areas; orchestrator must not edit business source
 7. Goal Spec Primary Path + acceptance checks when present
 8. Latest human rework / reject notes when present (MUST address)
+9. When `lastRework` is set: structured **Failed Goal Spec checks** (`[FAIL] …`) plus free-form feedback and reset scope; also point workers at `.team/notes.md`
 
 
 Do not assume the model “remembers” prior sticky turns as the contract.
@@ -371,6 +380,7 @@ Body discriminated by `type`:
 | `cancel` | hard cancel |
 | `accept` | only from `awaiting_human_acceptance` → `done` |
 | `reject` | → `blocked` + optional note |
+| `rework` | from `awaiting_human_acceptance` / `blocked` / `paused` → `replanning`; body `{ text?, failedChecks?: string[], resetFrom? }` — requires `text` and/or `failedChecks`; sets `lastRework`, appends `.team/notes.md`, resets implement→test→review by default, resumes engine |
 | `note` | `{ text }` human note |
 
 ### `GET /api/team-runs/[id]/events`

@@ -35,7 +35,7 @@ export function TeamAcceptancePanel({
   run: TeamRun;
   busy?: boolean;
   onAccept: () => void;
-  onReject: (feedback: string) => void;
+  onReject: (payload: { text: string; failedChecks: string[] }) => void;
   onOpenFile?: (path: string) => void;
 }) {
   const [cards, setCards] = useState<ArtifactCard[]>([]);
@@ -205,16 +205,6 @@ export function TeamAcceptancePanel({
       const next: CheckState = cur === "unchecked" ? "pass" : cur === "pass" ? "fail" : "unchecked";
       return { ...prev, [id]: next };
     });
-  };
-
-  const buildReworkFeedback = () => {
-    const parts: string[] = [];
-    if (failedChecks.length) {
-      parts.push("Failed Goal Spec checks:");
-      for (const c of failedChecks) parts.push(`- ${c.label}`);
-    }
-    if (feedback.trim()) parts.push(feedback.trim());
-    return parts.join("\n");
   };
 
   const openPath = (path?: string) => {
@@ -592,9 +582,10 @@ export function TeamAcceptancePanel({
             type="button"
             disabled={busy || !canRework || (!feedback.trim() && failedChecks.length === 0)}
             onClick={() => {
-              const text = buildReworkFeedback();
-              if (!text.trim()) return;
-              onReject(text);
+              const free = feedback.trim();
+              const fails = failedChecks.map((c) => c.label);
+              if (!free && fails.length === 0) return;
+              onReject({ text: free, failedChecks: fails });
             }}
             style={{
               ...dangerBtn,

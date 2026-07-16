@@ -4,7 +4,7 @@
 **Repo:** `/Users/dawn/code/agent/pi-web`  
 **Branch:** `dev` (track `origin/dev`; tip at handoff finalize: run `git rev-parse --short HEAD`)  
 **Remote:** `git@github.com:xixijay1988/pi-web.git`  
-**Next session focus:** continue **quality-first** Team Runs work; optionally polish Alignment UX only if quality queue is clear.
+**Next session focus:** **Q2 false-green fixtures** (then Q3 timeline validation errors). Q1 structured rework is shipped.
 
 ---
 
