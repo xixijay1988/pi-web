@@ -33,7 +33,7 @@ export function AppShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isDark, toggleTheme } = useTheme();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isMobile = useIsMobile();
   const [selectedSession, setSelectedSession] = useState<SessionInfo | null>(null);
   // When user clicks +, we only store the cwd — no fake session id
@@ -294,11 +294,11 @@ export function AppShell() {
     setPublishWarnings([
       ...(imported.draftWarnings ?? []),
       ...(imported.source === "transcript_only"
-        ? ["No goal_spec block found. Fill the form, or ask the agent to emit a ```goal_spec fence after grill-me."]
+        ? [t("app.goalSpecMissing")]
         : []),
     ]);
     setPublishOpen(true);
-  }, []);
+  }, [t]);
 
   const handleTeamPublished = useCallback((runId: string) => {
     setPublishOpen(false);
@@ -751,7 +751,7 @@ export function AppShell() {
           )}
           {/* Session stats — right-aligned in top bar */}
           {showChat && (sessionStats || contextUsage) && (() => {
-            const t = sessionStats?.tokens;
+            const tokenStats = sessionStats?.tokens;
             const c = sessionStats?.cost ?? 0;
             const fmt = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}k` : String(n);
             const costStr = c > 0 ? (c >= 0.01 ? `$${c.toFixed(2)}` : `<$0.01`) : null;
@@ -766,16 +766,16 @@ export function AppShell() {
             }
 
             const tooltipParts: string[] = [];
-            if (t) {
-              tooltipParts.push(`in: ${t.input.toLocaleString()}`);
-              tooltipParts.push(`out: ${t.output.toLocaleString()}`);
-              tooltipParts.push(`cache read: ${t.cacheRead.toLocaleString()}`);
-              tooltipParts.push(`cache write: ${t.cacheWrite.toLocaleString()}`);
-              if (c > 0) tooltipParts.push(`cost: $${c.toFixed(4)}`);
+            if (tokenStats) {
+              tooltipParts.push(`${t("app.sessionInfoInput")}: ${tokenStats.input.toLocaleString(locale)}`);
+              tooltipParts.push(`${t("app.sessionInfoOutput")}: ${tokenStats.output.toLocaleString(locale)}`);
+              tooltipParts.push(`${t("app.sessionInfoCacheRead")}: ${tokenStats.cacheRead.toLocaleString(locale)}`);
+              tooltipParts.push(`${t("app.sessionInfoCacheWrite")}: ${tokenStats.cacheWrite.toLocaleString(locale)}`);
+              if (c > 0) tooltipParts.push(`${t("app.sessionInfoCost")}: $${c.toFixed(4)}`);
             }
             if (contextUsage?.contextWindow) {
               const pct = contextUsage.percent;
-              tooltipParts.push(`context: ${pct !== null ? pct.toFixed(1) + "%" : "unknown"} of ${contextUsage.contextWindow.toLocaleString()} tokens`);
+              tooltipParts.push(`${t("app.sessionInfoContext")}: ${pct !== null ? pct.toFixed(1) + "%" : t("app.sessionInfoUnknown")} / ${contextUsage.contextWindow.toLocaleString(locale)} ${t("app.sessionInfoTokens")}`);
             }
             const tooltip = tooltipParts.join("  |  ");
 
@@ -783,8 +783,8 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => toggleTopPanel("session")}
-                title={tooltip || "Session info"}
-                aria-label="Session info"
+                title={tooltip || t("app.sessionInfo")}
+                aria-label={t("app.sessionInfo")}
                 aria-pressed={activeTopPanel === "session"}
                 style={{
                   marginLeft: "auto",
@@ -808,28 +808,28 @@ export function AppShell() {
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                 )}
-                {!isMobile && t && t.input > 0 && (
+                {!isMobile && tokenStats && tokenStats.input > 0 && (
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="5" y1="8.5" x2="5" y2="1.5" /><polyline points="2 4 5 1.5 8 4" />
                     </svg>
-                    {fmt(t.input)}
+                    {fmt(tokenStats.input)}
                   </span>
                 )}
-                {!isMobile && t && t.output > 0 && (
+                {!isMobile && tokenStats && tokenStats.output > 0 && (
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="5" y1="1.5" x2="5" y2="8.5" /><polyline points="2 6 5 8.5 8 6" />
                     </svg>
-                    {fmt(t.output)}
+                    {fmt(tokenStats.output)}
                   </span>
                 )}
-                {!isMobile && t && t.cacheRead > 0 && (
+                {!isMobile && tokenStats && tokenStats.cacheRead > 0 && (
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M8.5 5a3.5 3.5 0 1 1-1-2.45" /><polyline points="6.5 1.5 8.5 2.5 7.5 4.5" />
                     </svg>
-                    {fmt(t.cacheRead)}
+                    {fmt(tokenStats.cacheRead)}
                   </span>
                 )}
                 {!isMobile && costStr && (
@@ -879,11 +879,11 @@ export function AppShell() {
                     </div>
                   ) : systemPrompt === "" ? (
                     <div style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-                      System prompt is empty (tools are disabled)
+                      {t("app.systemPromptEmpty")}
                     </div>
                   ) : (
                     <div style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-                      Send a message to load the system prompt
+                      {t("app.systemPromptLoad")}
                     </div>
                   )}
                 </div>
@@ -897,29 +897,29 @@ export function AppShell() {
                 }}>
                   {sessionStats ? (() => {
                     const sessionRows = [
-                      ...(sessionStats.sessionName ? [{ label: "Name", value: sessionStats.sessionName, copyField: null }] : []),
-                      { label: "File", value: sessionStats.sessionFile ?? "In-memory", copyField: "file" as const },
+                      ...(sessionStats.sessionName ? [{ label: t("app.sessionInfoName"), value: sessionStats.sessionName, copyField: null }] : []),
+                      { label: t("app.sessionInfoFile"), value: sessionStats.sessionFile ?? t("app.sessionInfoInMemory"), copyField: "file" as const },
                       { label: "ID", value: sessionStats.sessionId, copyField: "id" as const },
                     ];
                     const messageRows = [
-                      ["User", sessionStats.userMessages.toLocaleString()],
-                      ["Assistant", sessionStats.assistantMessages.toLocaleString()],
-                      ["Tool Calls", sessionStats.toolCalls.toLocaleString()],
-                      ["Tool Results", sessionStats.toolResults.toLocaleString()],
-                      ["Total", sessionStats.totalMessages.toLocaleString()],
+                      [t("app.sessionInfoUser"), sessionStats.userMessages.toLocaleString(locale)],
+                      [t("app.sessionInfoAssistant"), sessionStats.assistantMessages.toLocaleString(locale)],
+                      [t("app.sessionInfoToolCalls"), sessionStats.toolCalls.toLocaleString(locale)],
+                      [t("app.sessionInfoToolResults"), sessionStats.toolResults.toLocaleString(locale)],
+                      [t("app.sessionInfoTotal"), sessionStats.totalMessages.toLocaleString(locale)],
                     ];
                     const tokenRows = [
-                      ["Input", sessionStats.tokens.input.toLocaleString()],
-                      ["Output", sessionStats.tokens.output.toLocaleString()],
-                      ...(sessionStats.tokens.cacheRead > 0 ? [["Cache Read", sessionStats.tokens.cacheRead.toLocaleString()]] : []),
-                      ...(sessionStats.tokens.cacheWrite > 0 ? [["Cache Write", sessionStats.tokens.cacheWrite.toLocaleString()]] : []),
-                      ["Total", sessionStats.tokens.total.toLocaleString()],
+                      [t("app.sessionInfoInput"), sessionStats.tokens.input.toLocaleString(locale)],
+                      [t("app.sessionInfoOutput"), sessionStats.tokens.output.toLocaleString(locale)],
+                      ...(sessionStats.tokens.cacheRead > 0 ? [[t("app.sessionInfoCacheRead"), sessionStats.tokens.cacheRead.toLocaleString(locale)]] : []),
+                      ...(sessionStats.tokens.cacheWrite > 0 ? [[t("app.sessionInfoCacheWrite"), sessionStats.tokens.cacheWrite.toLocaleString(locale)]] : []),
+                      [t("app.sessionInfoTotal"), sessionStats.tokens.total.toLocaleString(locale)],
                     ];
                     const ctx = contextUsage ?? sessionStats.contextUsage;
                     const formatCompact = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}k` : String(n);
                     const extraTokenRows = [
-                      ...(sessionStats.cost > 0 ? [["Cost", `$${sessionStats.cost.toFixed(4)}`]] : []),
-                      ...(ctx?.contextWindow ? [["Context", `${ctx.percent !== null ? `${ctx.percent.toFixed(1)}%` : "?"} / ${formatCompact(ctx.contextWindow)}`]] : []),
+                      ...(sessionStats.cost > 0 ? [[t("app.sessionInfoCost"), `$${sessionStats.cost.toFixed(4)}`]] : []),
+                      ...(ctx?.contextWindow ? [[t("app.sessionInfoContext"), `${ctx.percent !== null ? `${ctx.percent.toFixed(1)}%` : "?"} / ${formatCompact(ctx.contextWindow)}`]] : []),
                     ];
                     const section = (
                       title: string,
@@ -956,7 +956,11 @@ export function AppShell() {
                       return (
                         <button
                           type="button"
-                          title={copied ? "Copied" : `Copy ${field === "file" ? "file path" : "session ID"}`}
+                          title={copied
+                            ? t("app.sessionInfoCopied")
+                            : field === "file"
+                              ? t("app.sessionInfoCopyFile")
+                              : t("app.sessionInfoCopyId")}
                           onClick={() => handleCopySessionField(field, value)}
                           style={{
                             alignSelf: "start",
@@ -1000,7 +1004,7 @@ export function AppShell() {
                     };
                     const sessionInfoSection = (
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>Session Info</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{t("app.sessionInfo")}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, rowGap: 8, alignItems: "start" }}>
                           {sessionRows.map((row) => (
                             <div key={`session-info:${row.label}`} style={{ display: "contents" }}>
@@ -1031,13 +1035,13 @@ export function AppShell() {
                         fontFamily: "var(--font-mono)",
                       }}>
                         {sessionInfoSection}
-                        {section("Messages", messageRows)}
-                        {section("Tokens", [...tokenRows, ...extraTokenRows], "right", true)}
+                        {section(t("app.sessionInfoMessages"), messageRows)}
+                        {section(t("app.sessionInfoTokens"), [...tokenRows, ...extraTokenRows], "right", true)}
                       </div>
                     );
                   })() : (
                     <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-                      Send a message or run /session to load session info
+                      {t("app.sessionInfoEmpty")}
                     </div>
                   )}
                 </div>
@@ -1078,7 +1082,7 @@ export function AppShell() {
           ) : showPlaceholder ? (
             activeCwd ? (
               <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 15 }}>
-                Select a session from the sidebar
+                {t("app.selectSession")}
               </div>
             ) : (
               <div style={{ position: "absolute", top: 12, left: 12, display: "flex", alignItems: "flex-start", gap: 8, userSelect: "none", pointerEvents: "none" }}>
@@ -1131,7 +1135,7 @@ export function AppShell() {
             />
           ) : (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-dim)", fontSize: 12 }}>
-              No file open
+              {t("files.noFileOpen")}
             </div>
           )}
         </div>

@@ -129,7 +129,9 @@ export function TeamAlignmentWorkspace({
     try {
       const userVisible =
         mode === "start"
-          ? text || `(Start alignment with skills: ${selectedSkills.join(", ") || "none"})`
+          ? text || t("team.workspace.startWithSkills", {
+            skills: selectedSkills.join(", ") || t("team.workspace.none"),
+          })
           : text;
       setMessages((prev) => [...prev, { role: "user", text: userVisible }]);
       if (mode === "start" && !textOverride) setIdea("");
@@ -162,7 +164,7 @@ export function TeamAlignmentWorkspace({
       if (data.sessionId) setSessionId(data.sessionId);
       if (data.sessionFile) setSessionFile(data.sessionFile);
       setMissingSkills(data.missingSkills ?? []);
-      const assistantText = (data.assistantText ?? "").trim() || "(empty model response)";
+      const assistantText = (data.assistantText ?? "").trim() || t("team.workspace.emptyModelResponse");
       setMessages((prev) => [...prev, { role: "assistant", text: assistantText }]);
       setDraft(data.draft ?? null);
       setDraftErrors(data.draftErrors ?? []);
@@ -437,7 +439,7 @@ export function TeamAlignmentWorkspace({
             ) : (
               <>
                 <div style={{ fontSize: 12, lineHeight: 1.45, whiteSpace: "pre-wrap", color: "var(--text)" }}>
-                  {`Outcome: ${draft.outcome || "—"}\n\nPrimary Path:\n${draft.primaryPath || "—"}\n\nChecks:\n${draft.acceptanceChecks.map((c, i) => `${i + 1}. ${c}`).join("\n") || "—"}`}
+                  {`${t("team.workspace.previewOutcome")}: ${draft.outcome || "—"}\n\n${t("team.workspace.previewPrimaryPath")}:\n${draft.primaryPath || "—"}\n\n${t("team.workspace.previewChecks")}:\n${draft.acceptanceChecks.map((c, i) => `${i + 1}. ${c}`).join("\n") || "—"}`}
                 </div>
                 {draftErrors.length > 0 && (
                   <div style={{ fontSize: 11, color: "#ef4444", marginTop: 8 }}>{draftErrors.join("; ")}</div>

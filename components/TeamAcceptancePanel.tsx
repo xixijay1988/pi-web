@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import {
   acceptanceChecklistStorageKey,
@@ -42,6 +43,7 @@ export function TeamAcceptancePanel({
   onReject: (payload: { text: string; failedChecks: string[] }) => void;
   onOpenFile?: (path: string) => void;
 }) {
+  const { t } = useI18n();
   const [cards, setCards] = useState<ArtifactCard[]>([]);
   const [feedback, setFeedback] = useState("");
   const [checkState, setCheckState] = useState<Record<string, AcceptanceCheckState>>({});
@@ -58,8 +60,10 @@ export function TeamAcceptancePanel({
       {
         id: "primary_path",
         label: run.goalSpec?.primaryPath
-          ? `按 Primary Path 打开并可用：${shortOneLine(run.goalSpec.primaryPath)}`
-          : "按文档中的 Primary Path 打开并可用",
+          ? t("team.acceptance.primaryPathCheck", {
+              path: shortOneLine(run.goalSpec.primaryPath),
+            })
+          : t("team.acceptance.primaryPathDocumentCheck"),
       },
       ...fromSpec.map((c, i) => ({ id: `ac_${i}`, label: c })),
     ];
@@ -70,7 +74,7 @@ export function TeamAcceptancePanel({
       seen.add(k);
       return true;
     });
-  }, [run.goalSpec]);
+  }, [run.goalSpec, t]);
 
   const checklistStorageKey = acceptanceChecklistStorageKey(run.id);
   const checklistSignature = checks.map((check) => check.id).join("\n");
@@ -104,27 +108,35 @@ export function TeamAcceptancePanel({
   useEffect(() => {
     let cancelled = false;
     const specs: Array<{ key: string; title: string; path?: string }> = [
-      { key: "goal", title: "Goal Spec", path: `${teamRoot}/.team/goal-spec.md` },
-      { key: "goal_fallback", title: "Goal", path: `${teamRoot}/.team/goal.md` },
+      {
+        key: "goal",
+        title: t("team.acceptance.artifactGoalSpec"),
+        path: `${teamRoot}/.team/goal-spec.md`,
+      },
+      {
+        key: "goal_fallback",
+        title: t("team.acceptance.artifactGoal"),
+        path: `${teamRoot}/.team/goal.md`,
+      },
       { key: "readme", title: "README", path: `${teamRoot}/README.md` },
       {
         key: "contract",
-        title: "Contract",
+        title: t("team.acceptance.artifactContract"),
         path: findArtifact(run, "architect") ?? findByName(run, "contract.md"),
       },
       {
         key: "change",
-        title: "Change summary",
+        title: t("team.acceptance.artifactChangeSummary"),
         path: findArtifact(run, "implementer") ?? findByName(run, "change-summary.md"),
       },
       {
         key: "test",
-        title: "Test report",
+        title: t("team.acceptance.artifactTestReport"),
         path: findArtifact(run, "tester") ?? findByName(run, "test-report.md"),
       },
       {
         key: "acceptance",
-        title: "Reviewer verdict",
+        title: t("team.acceptance.artifactReviewerVerdict"),
         path: findArtifact(run, "reviewer") ?? findByName(run, "acceptance.md"),
       },
     ];
@@ -154,7 +166,6 @@ export function TeamAcceptancePanel({
           if (spec.key === "goal") goalSpecLoaded = true;
           next.push({
             ...spec,
-            title: spec.key === "goal" ? "Goal Spec" : spec.title,
             path: spec.path,
             body: typeof data.content === "string" ? data.content : undefined,
             missing: typeof data.content !== "string",
@@ -175,7 +186,7 @@ export function TeamAcceptancePanel({
     return () => {
       cancelled = true;
     };
-  }, [run, teamRoot]);
+  }, [run, teamRoot, t]);
 
   const byKey = useMemo(() => {
     const m = new Map<string, ArtifactCard>();
@@ -195,8 +206,14 @@ export function TeamAcceptancePanel({
         changeSummary: changeBody,
         readme: readmeBody,
         cwd: teamRoot,
+        fallbackRunScript: t("team.acceptance.fallbackRunScript"),
+        enterDirectory: t("team.acceptance.enterDirectory", {
+          path: shorten(teamRoot),
+        }),
+        fileProtocolWarning: t("team.acceptance.fileProtocolWarning"),
+        noFileProtocolWarning: t("team.acceptance.noFileProtocolWarning"),
       }),
-    [run.goalSpec?.primaryPath, changeBody, readmeBody, teamRoot],
+    [run.goalSpec?.primaryPath, changeBody, readmeBody, teamRoot, t],
   );
 
   const evidence = useMemo(
@@ -259,30 +276,30 @@ export function TeamAcceptancePanel({
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
             {ready
-              ? "等待你的验收"
+              ? t("team.acceptance.awaiting")
               : run.status === "done"
-                ? "已验收完成"
+                ? t("team.acceptance.done")
                 : run.status === "blocked"
-                  ? "阻塞 — 可返工"
-                  : `验收 · ${run.status}`}
+                  ? t("team.acceptance.blocked")
+                  : t("team.acceptance.status", { status: run.status })}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
             {ready
-              ? "先按步骤打开成果，再勾选检查项。Agent 报告默认折叠，只在需要时查看。"
-              : "主路径仍是运行与检查；完整报告按需展开。"}
+              ? t("team.acceptance.readyHelp")
+              : t("team.acceptance.defaultHelp")}
           </div>
         </div>
         <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "right" }}>
-          <div>工作目录</div>
+          <div>{t("team.acceptance.workingDirectory")}</div>
           <code style={{ fontSize: 11, color: "var(--text)" }}>{shorten(teamRoot)}</code>
         </div>
       </div>
 
       {/* 1. How to run */}
       <section style={sectionBox}>
-        <div style={sectionTitle}>1. 如何打开 / 运行成果</div>
+        <div style={sectionTitle}>{t("team.acceptance.howToRunTitle")}</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.45 }}>
-          在本机终端操作；以你浏览器里的实际结果为准，不要只信 Agent 报告。
+          {t("team.acceptance.howToRunHelp")}
         </div>
         {howToRun.lines.length > 0 ? (
           <ol style={{ margin: "0 0 10px", paddingLeft: 20, fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>
@@ -294,7 +311,7 @@ export function TeamAcceptancePanel({
           </ol>
         ) : (
           <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
-            未解析到运行步骤。可打开 README 或 Change summary。
+            {t("team.acceptance.noRunSteps")}
           </div>
         )}
         {howToRun.warnings.length > 0 && (
@@ -307,13 +324,13 @@ export function TeamAcceptancePanel({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {howToRun.urls.map((url) => (
             <a key={url} href={url} target="_blank" rel="noreferrer" style={linkBtn}>
-              打开 {url}
+              {t("team.acceptance.openUrl", { url })}
             </a>
           ))}
           {onOpenFile && (
             <>
               <button type="button" style={secondaryBtn} onClick={() => openPath(teamRoot + "/README.md")}>
-                打开 README
+                {t("team.acceptance.openReadme")}
               </button>
               <button
                 type="button"
@@ -321,17 +338,19 @@ export function TeamAcceptancePanel({
                 onClick={() => openPath(byKey.get("change")?.path)}
                 disabled={!byKey.get("change")?.path}
               >
-                打开 Change summary
+                {t("team.acceptance.openChangeSummary")}
               </button>
               <button type="button" style={secondaryBtn} onClick={() => openPath(teamRoot + "/package.json")}>
-                打开 package.json
+                {t("team.acceptance.openPackageJson")}
               </button>
             </>
           )}
         </div>
         {run.goalSpec?.primaryPath && (
           <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.45 }}>
-            <span style={{ color: "var(--text-muted)" }}>Primary Path：</span>
+            <span style={{ color: "var(--text-muted)" }}>
+              {t("team.acceptance.primaryPathLabel")}
+            </span>
             <div style={{ whiteSpace: "pre-wrap", color: "var(--text)", marginTop: 4 }}>
               {run.goalSpec.primaryPath}
             </div>
@@ -341,12 +360,14 @@ export function TeamAcceptancePanel({
 
       {/* 2. Checklist */}
       <section style={sectionBox}>
-        <div style={sectionTitle}>2. 按 Goal Spec 逐项验收</div>
+        <div style={sectionTitle}>{t("team.acceptance.checklistTitle")}</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-          点击切换：未检 → 通过 → 失败。状态保存在本机，刷新后仍会保留。建议全部通过后再 Accept。
+          {t("team.acceptance.checklistHelp")}
         </div>
         {checks.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无结构化检查项 — 请结合 Goal Spec 自行判断。</div>
+          <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+            {t("team.acceptance.noChecks")}
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {checks.map((c) => {
@@ -396,9 +417,9 @@ export function TeamAcceptancePanel({
 
       {/* 3. Compact evidence — Plan A */}
       <section style={sectionBox}>
-        <div style={sectionTitle}>3. 验收辅助（摘要，不是必读全文）</div>
+        <div style={sectionTitle}>{t("team.acceptance.evidenceTitle")}</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.45 }}>
-          这些信息帮助你决定，但不能替代你亲自打开成果。完整 Agent 报告默认折叠。
+          {t("team.acceptance.evidenceHelp")}
         </div>
 
         <div
@@ -410,20 +431,22 @@ export function TeamAcceptancePanel({
           }}
         >
           <SummaryCard
-            title="改动要点"
+            title={t("team.acceptance.changesTitle")}
             tone="neutral"
             body={
               evidence.changed.length
                 ? evidence.changed.map((x) => `• ${x}`).join("\n")
-                : "暂无摘要 — 需要时可展开 Change summary"
+                : t("team.acceptance.noChangeSummary")
             }
           />
           <SummaryCard
-            title="测试结论"
+            title={t("team.acceptance.testConclusion")}
             tone={evidence.testStatus === "pass" ? "good" : evidence.testStatus === "fail" ? "bad" : "neutral"}
             body={
               [
-                evidence.testStatus ? `status: ${evidence.testStatus}` : "status: 未知",
+                evidence.testStatus
+                  ? `status: ${evidence.testStatus}`
+                  : t("team.acceptance.statusUnknown"),
                 evidence.testBlurb,
               ]
                 .filter(Boolean)
@@ -431,17 +454,19 @@ export function TeamAcceptancePanel({
             }
           />
           <SummaryCard
-            title="Reviewer 结论"
+            title={t("team.acceptance.reviewerConclusion")}
             tone={
               evidence.reviewStatus === "pass" ? "good" : evidence.reviewStatus === "fail" ? "bad" : "neutral"
             }
             body={
               [
-                evidence.reviewStatus ? `status: ${evidence.reviewStatus}` : "status: 未知",
+                evidence.reviewStatus
+                  ? `status: ${evidence.reviewStatus}`
+                  : t("team.acceptance.statusUnknown"),
                 evidence.primaryVerified === true
                   ? "primary_path_verified: true"
                   : evidence.primaryVerified === false
-                    ? "primary_path_verified: 未确认"
+                    ? "primary_path_verified: false"
                     : undefined,
                 evidence.reviewBlurb,
               ]
@@ -462,12 +487,12 @@ export function TeamAcceptancePanel({
                 setExpandedKey(c.key);
               }}
             >
-              查看 {c.title}
+              {t("team.acceptance.viewReport", { title: c.title })}
             </button>
           ))}
           {onOpenFile && byKey.get("change")?.path && (
             <button type="button" style={linkBtn} onClick={() => openPath(byKey.get("change")?.path)}>
-              文件面板打开 Change summary
+              {t("team.acceptance.openChangeInFiles")}
             </button>
           )}
         </div>
@@ -484,7 +509,9 @@ export function TeamAcceptancePanel({
             padding: 0,
           }}
         >
-          {showEvidenceDrawer ? "收起完整报告 ▾" : "展开完整 Agent 报告（Markdown 渲染） ▸"}
+          {showEvidenceDrawer
+            ? t("team.acceptance.collapseReports")
+            : t("team.acceptance.expandReports")}
         </button>
 
         {showEvidenceDrawer && (
@@ -530,15 +557,19 @@ export function TeamAcceptancePanel({
               })}
               {expanded?.path && onOpenFile && (
                 <button type="button" style={{ ...linkBtn, marginLeft: "auto" }} onClick={() => openPath(expanded.path)}>
-                  在文件面板打开
+                  {t("team.acceptance.openInFiles")}
                 </button>
               )}
             </div>
             <div style={{ maxHeight: 360, overflow: "auto", padding: 12 }}>
               {!expanded ? (
-                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>选择上方报告查看渲染内容。</div>
+                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                  {t("team.acceptance.chooseReport")}
+                </div>
               ) : expanded.missing ? (
-                <div style={{ fontSize: 12, color: "#ef4444" }}>{expanded.error || "文件缺失"}</div>
+                <div style={{ fontSize: 12, color: "#ef4444" }}>
+                  {expanded.error || t("team.acceptance.fileMissing")}
+                </div>
               ) : expanded.body ? (
                 <div className="team-acceptance-md" style={{ fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>
                   <MarkdownBody cwd={teamRoot} onOpenFile={onOpenFile}>
@@ -546,7 +577,9 @@ export function TeamAcceptancePanel({
                   </MarkdownBody>
                 </div>
               ) : (
-                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无内容</div>
+                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                  {t("team.acceptance.noContent")}
+                </div>
               )}
             </div>
           </div>
@@ -555,21 +588,21 @@ export function TeamAcceptancePanel({
 
       {/* 4. Decision */}
       <section style={sectionBox}>
-        <div style={sectionTitle}>4. 你的决定</div>
+        <div style={sectionTitle}>{t("team.acceptance.decisionTitle")}</div>
         {ready && anyUnchecked && checks.length > 0 && (
           <div style={{ fontSize: 12, color: "#d97706", marginBottom: 8 }}>
-            还有未勾选的检查项 — 建议先全部点一遍再 Accept。
+            {t("team.acceptance.uncheckedWarning")}
           </div>
         )}
         {failedChecks.length > 0 && (
           <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 8 }}>
-            已标记失败 {failedChecks.length} 项 — 请用 Rework 并写清问题。
+            {t("team.acceptance.failedWarning", { count: failedChecks.length })}
           </div>
         )}
         <textarea
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Rework 时填写：哪里不对、期望行为、复现步骤…"
+          placeholder={t("team.acceptance.feedbackPlaceholder")}
           rows={3}
           style={{
             width: "100%",
@@ -590,12 +623,12 @@ export function TeamAcceptancePanel({
             disabled={busy || !ready || failedChecks.length > 0}
             title={
               !ready
-                ? "仅在 awaiting_human_acceptance 时可 Accept"
+                ? t("team.acceptance.acceptUnavailable")
                 : failedChecks.length
-                  ? "有失败检查项时请 Rework"
+                  ? t("team.acceptance.reworkFailedChecks")
                   : allCheckedPass
-                    ? "确认 Goal Spec 检查均通过"
-                    : "建议先勾选检查项"
+                    ? t("team.acceptance.allChecksPass")
+                    : t("team.acceptance.checkFirst")
             }
             onClick={() => onAccept()}
             style={{
@@ -604,7 +637,7 @@ export function TeamAcceptancePanel({
               cursor: busy || !ready || failedChecks.length > 0 ? "not-allowed" : "pointer",
             }}
           >
-            Accept — 验收通过
+            {t("team.acceptance.accept")}
           </button>
           <button
             type="button"
@@ -624,11 +657,11 @@ export function TeamAcceptancePanel({
                   : "pointer",
             }}
           >
-            Reject & rework
+            {t("team.acceptance.rework")}
           </button>
         </div>
         <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 8, lineHeight: 1.4 }}>
-          Rework 会把反馈注入后续 implement → test → review。Accept 将 Team Run 标为 done。
+          {t("team.acceptance.decisionHelp")}
         </div>
       </section>
     </div>
@@ -742,6 +775,10 @@ function extractHowToRun(input: {
   changeSummary: string;
   readme: string;
   cwd: string;
+  fallbackRunScript: string;
+  enterDirectory: string;
+  fileProtocolWarning: string;
+  noFileProtocolWarning: string;
 }): { lines: string[]; urls: string[]; warnings: string[] } {
   const warnings: string[] = [];
   const urls = new Set<string>();
@@ -778,20 +815,20 @@ function extractHowToRun(input: {
 
   if (lines.length === 0) {
     lines.push(`cd ${shorten(input.cwd)}`);
-    lines.push("查看 README / package.json 中的启动脚本（常见：npm install && npm run dev）");
+    lines.push(input.fallbackRunScript);
   } else if (!lines.some((l) => /cd |工作目录|project root|项目/i.test(l))) {
-    lines.unshift(`进入目录：${shorten(input.cwd)}`);
+    lines.unshift(input.enterDirectory);
   }
 
   if (/file:\/\//i.test(source) || /double-click|双击/i.test(source)) {
-    warnings.push("文档提到 file:// 或双击打开 — 若项目使用 ES modules，请优先用本地 HTTP（如 npm run dev）。");
+    warnings.push(input.fileProtocolWarning);
   }
   if (
     /do not.*file:\/\//i.test(source) ||
     /不要.*file:\/\//i.test(source) ||
     /Do not.*file:\/\//i.test(input.changeSummary)
   ) {
-    warnings.push("实现方明确要求：不要用 file:// 打开。");
+    warnings.push(input.noFileProtocolWarning);
   }
 
   return { lines: lines.slice(0, 8), urls: [...urls], warnings };

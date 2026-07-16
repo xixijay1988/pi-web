@@ -142,7 +142,7 @@ export function TeamAlignmentRoom({
       if (type === "advance") setLastMeta(t("team.room.turn", { seat: data.seatId ?? "?" }));
       if (type === "synthesize") setLastMeta(t("team.room.synthesize"));
       if (type === "publish" && data.run?.id) {
-        setLastMeta(`Published Team Run ${data.run.id}`);
+        setLastMeta(t("team.room.publishedRun", { id: data.run.id }));
         onPublishedRun?.(data.run.id);
       }
       if (type === "message") setHumanMsg("");

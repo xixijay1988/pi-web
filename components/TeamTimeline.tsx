@@ -19,7 +19,7 @@ export function TeamTimeline({
   nodes?: PlanNode[];
   onOpenFile?: (path: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const ordered = events.slice().reverse();
 
   return (
@@ -66,7 +66,7 @@ export function TeamTimeline({
                 }}
               >
                 <div style={{ color: "var(--text-dim)", fontVariantNumeric: "tabular-nums" }}>
-                  {formatTime(e.at)}
+                  {formatTime(e.at, locale)}
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: eventColor(e.type), fontWeight: 600 }}>{e.type}</div>
@@ -95,7 +95,7 @@ export function TeamTimeline({
                               onClick={() => onOpenFile(path)}
                               style={openFileButtonStyle}
                             >
-                              Open file
+                              {t("team.timeline.openFile")}
                             </button>
                           )}
                         </div>
@@ -133,9 +133,9 @@ const openFileButtonStyle: React.CSSProperties = {
   padding: 0,
 };
 
-function formatTime(iso: string): string {
+function formatTime(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleTimeString();
+    return new Date(iso).toLocaleTimeString(locale);
   } catch {
     return iso;
   }

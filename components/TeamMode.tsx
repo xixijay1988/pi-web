@@ -50,7 +50,7 @@ export function TeamMode({
   onOpenSession?: (sessionId: string) => void;
   onOpenFile?: (filePath: string, fileName: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [runs, setRuns] = useState<TeamRunListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(selectedRunId ?? null);
   const { run, setRun, error, setError, loading } = useTeamRun(selectedId);
@@ -123,7 +123,7 @@ export function TeamMode({
       .filter(Boolean);
     const resolvedOutcome = outcome.trim() || alignDraft.trim();
     if (!resolvedOutcome) {
-      setError("Outcome / goal is required");
+      setError(t("team.mode.outcomeRequired"));
       return;
     }
     setBusy(true);
@@ -206,7 +206,7 @@ export function TeamMode({
     if (!run) return;
     if (["planning", "executing", "replanning"].includes(run.status)) {
       const ok = window.confirm(
-        "This Team Run is still auto-running.\n\nOpening the role session is fine (observe).\nIf you send messages there, pause the run first so the engine does not race you.\n\nPause now?",
+        t("team.mode.pauseRoleConfirm"),
       );
       if (ok) await command("pause");
     }
@@ -329,7 +329,7 @@ export function TeamMode({
             <textarea
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
-              placeholder="What should exist when done?"
+              placeholder={t("team.mode.outcomePlaceholder")}
               rows={2}
               style={fieldStyle}
             />
@@ -338,7 +338,7 @@ export function TeamMode({
             <textarea
               value={primaryPath}
               onChange={(e) => setPrimaryPath(e.target.value)}
-              placeholder="How a human opens/uses it (e.g. double-click index.html / npx serve .)"
+              placeholder={t("team.mode.primaryPathPlaceholder")}
               rows={2}
               style={fieldStyle}
             />
@@ -347,7 +347,7 @@ export function TeamMode({
             <textarea
               value={acceptanceText}
               onChange={(e) => setAcceptanceText(e.target.value)}
-              placeholder={"1. Add non-empty todo → item appears\n2. Refresh keeps todos\n3. Toggle complete works"}
+              placeholder={t("team.mode.acceptancePlaceholder")}
               rows={4}
               style={fieldStyle}
             />
@@ -357,7 +357,7 @@ export function TeamMode({
               <textarea
                 value={alignDraft}
                 onChange={(e) => setAlignDraft(e.target.value)}
-                placeholder="Paste extra decisions / coach notes..."
+                placeholder={t("team.mode.notesPlaceholder")}
                 rows={3}
                 style={fieldStyle}
               />
@@ -451,7 +451,7 @@ export function TeamMode({
               <div style={{ fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap" }}>{run.goal}</div>
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
                 {shortenPath(run.cwd)} · {run.id.slice(0, 8)}
-                {budgetView?.currentNodeId ? ` · current node ${budgetView.currentNodeId}` : ""}
+                {budgetView?.currentNodeId ? ` · ${t("team.mode.currentNode", { id: budgetView.currentNodeId })}` : ""}
               </div>
 
               {budgetView && (
@@ -465,9 +465,9 @@ export function TeamMode({
                     color: "var(--text-muted)",
                   }}
                 >
-                  <Chip>replans {budgetView.replanCount}/{budgetView.maxReplans}</Chip>
-                  <Chip>max attempts/node {budgetView.maxAttempts}</Chip>
-                  <Chip>elapsed {budgetView.elapsedLabel} / {budgetView.maxLabel}</Chip>
+                  <Chip>{t("team.mode.replans", { current: budgetView.replanCount, max: budgetView.maxReplans })}</Chip>
+                  <Chip>{t("team.mode.maxAttempts", { count: budgetView.maxAttempts })}</Chip>
+                  <Chip>{t("team.mode.elapsed", { current: budgetView.elapsedLabel, max: budgetView.maxLabel })}</Chip>
                 </div>
               )}
 
@@ -530,8 +530,8 @@ export function TeamMode({
 
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 10 }}>
                 {run.status === "awaiting_human_acceptance"
-                  ? "验收阶段：主区域已放大。请按「如何运行」打开成果，对照检查项后再 Accept / Rework。"
-                  : "Observe role sessions anytime. Sending chat to a role while auto-running can race the engine — pause first (prompted when opening a session)."}
+                  ? t("team.mode.acceptanceGuidance")
+                  : t("team.mode.observeGuidance")}
               </div>
             </div>
 
@@ -563,10 +563,10 @@ export function TeamMode({
                 {(run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked") ? (
                   <details style={{ marginTop: 4, marginBottom: 12 }}>
                     <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--text-muted)", userSelect: "none" }}>
-                      Plan nodes & role sessions（验收时默认折叠，点击展开）
+                      {t("team.mode.planRoleSummary")}
                     </summary>
                     <div style={{ marginTop: 10 }}>
-                      <Section title="Plan nodes">
+                      <Section title={t("team.mode.planNodes")}>
                   {run.plan.nodes.map((n) => {
                     const role = run.roleSnapshots.find((r) => r.roleId === n.roleId);
                     const active = n.status === "running" || n.status === "starting" || n.status === "validating";
@@ -590,9 +590,11 @@ export function TeamMode({
                         <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
                           {role?.provider && role?.modelId
                             ? `${role.provider}/${role.modelId}`
-                            : "model not set"}
-                          {n.sessionId ? ` · session ${n.sessionId.slice(0, 8)}` : " · no session yet"}
-                          {` · attempts ${n.attempts}`}
+                            : t("team.mode.modelNotSet")}
+                          {n.sessionId
+                            ? ` · ${t("team.mode.sessionShort", { id: n.sessionId.slice(0, 8) })}`
+                            : ` · ${t("team.mode.noSession")}`}
+                          {` · ${t("team.mode.attempts", { count: n.attempts })}`}
                         </div>
                         {n.lastError && (
                           <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>{n.lastError}</div>
@@ -612,7 +614,7 @@ export function TeamMode({
                                   fontSize: 10,
                                 }}
                               >
-                                open
+                                {t("common.open")}
                               </button>
                             )}
                           </div>
@@ -631,7 +633,7 @@ export function TeamMode({
                               cursor: "pointer",
                             }}
                           >
-                            Open role session
+                            {t("team.mode.openRoleSession")}
                           </button>
                         )}
                       </div>
@@ -639,7 +641,7 @@ export function TeamMode({
                   })}
                 </Section>
 
-                <Section title="Role snapshots">
+                <Section title={t("team.mode.roleSnapshots")}>
                   {run.roleSnapshots.map((r) => (
                     <div key={r.roleId} style={{ fontSize: 12, marginBottom: 6, color: "var(--text-muted)" }}>
                       <strong style={{ color: "var(--text)" }}>{r.name}</strong> ({r.roleId}) · {r.toolPreset}
@@ -651,7 +653,7 @@ export function TeamMode({
                   </details>
                 ) : (
                   <>
-                    <Section title="Plan nodes">
+                    <Section title={t("team.mode.planNodes")}>
                   {run.plan.nodes.map((n) => {
                     const role = run.roleSnapshots.find((r) => r.roleId === n.roleId);
                     const active = n.status === "running" || n.status === "starting" || n.status === "validating";
@@ -675,9 +677,11 @@ export function TeamMode({
                         <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
                           {role?.provider && role?.modelId
                             ? `${role.provider}/${role.modelId}`
-                            : "model not set"}
-                          {n.sessionId ? ` · session ${n.sessionId.slice(0, 8)}` : " · no session yet"}
-                          {` · attempts ${n.attempts}`}
+                            : t("team.mode.modelNotSet")}
+                          {n.sessionId
+                            ? ` · ${t("team.mode.sessionShort", { id: n.sessionId.slice(0, 8) })}`
+                            : ` · ${t("team.mode.noSession")}`}
+                          {` · ${t("team.mode.attempts", { count: n.attempts })}`}
                         </div>
                         {n.lastError && (
                           <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>{n.lastError}</div>
@@ -697,7 +701,7 @@ export function TeamMode({
                                   fontSize: 10,
                                 }}
                               >
-                                open
+                                {t("common.open")}
                               </button>
                             )}
                           </div>
@@ -716,7 +720,7 @@ export function TeamMode({
                               cursor: "pointer",
                             }}
                           >
-                            Open role session
+                            {t("team.mode.openRoleSession")}
                           </button>
                         )}
                       </div>
@@ -724,7 +728,7 @@ export function TeamMode({
                   })}
                 </Section>
 
-                <Section title="Role snapshots">
+                <Section title={t("team.mode.roleSnapshots")}>
                   {run.roleSnapshots.map((r) => (
                     <div key={r.roleId} style={{ fontSize: 12, marginBottom: 6, color: "var(--text-muted)" }}>
                       <strong style={{ color: "var(--text)" }}>{r.name}</strong> ({r.roleId}) · {r.toolPreset}
@@ -764,7 +768,7 @@ export function TeamMode({
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={3}
-                    placeholder="Note for next planning cycle (does not chat a worker role)"
+                    placeholder={t("team.mode.humanNotePlaceholder")}
                     style={{
                       width: "100%",
                       boxSizing: "border-box",
@@ -783,7 +787,7 @@ export function TeamMode({
                     <div style={{ marginTop: 8 }}>
                       {run.humanNotes.slice().reverse().map((n, i) => (
                         <div key={`${n.at}-${i}`} style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
-                          <div style={{ color: "var(--text-dim)" }}>{new Date(n.at).toLocaleString()}</div>
+                          <div style={{ color: "var(--text-dim)" }}>{new Date(n.at).toLocaleString(locale)}</div>
                           <div>{n.text}</div>
                         </div>
                       ))}

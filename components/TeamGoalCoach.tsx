@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 
 type CoachMessage = {
@@ -37,6 +38,7 @@ export function TeamGoalCoach({
   onApplyDraft: (draft: GoalSpec) => void;
   onOpenSession?: (sessionId: string) => void;
 }) {
+  const { t } = useI18n();
   const [idea, setIdea] = useState("");
   const [reply, setReply] = useState("");
   const [messages, setMessages] = useState<CoachMessage[]>([]);
@@ -122,16 +124,16 @@ export function TeamGoalCoach({
 
   const send = async (mode: "start" | "continue") => {
     if (!cwd) {
-      onError("Select a project cwd first (Chat sidebar / explorer).");
+      onError(t("team.coach.selectProject"));
       return;
     }
     const text = mode === "start" ? idea.trim() : reply.trim();
     if (mode === "continue" && !text) {
-      onError("Type a reply for the Goal Coach.");
+      onError(t("team.coach.typeReply"));
       return;
     }
     if (mode === "continue" && !sessionId) {
-      onError("Start Goal Coach first.");
+      onError(t("team.coach.startFirst"));
       return;
     }
 
@@ -140,7 +142,9 @@ export function TeamGoalCoach({
     try {
       const userVisible =
         mode === "start"
-          ? text || `(Start alignment with skills: ${selectedSkills.join(", ") || "none"})`
+          ? text || t("team.coach.startWithoutIdea", {
+              skills: selectedSkills.join(", ") || t("team.coach.noSkills"),
+            })
           : text;
       setMessages((prev) => [...prev, { role: "user", text: userVisible }]);
       if (mode === "start") setIdea("");
@@ -174,7 +178,8 @@ export function TeamGoalCoach({
       if (data.sessionId) setSessionId(data.sessionId);
       if (data.sessionFile) setSessionFile(data.sessionFile);
       setMissingSkills(data.missingSkills ?? []);
-      const assistantText = (data.assistantText ?? "").trim() || "(empty model response)";
+      const assistantText =
+        (data.assistantText ?? "").trim() || t("team.coach.emptyResponse");
       setMessages((prev) => [...prev, { role: "assistant", text: assistantText }]);
       setDraft(data.draft ?? null);
       setDraftErrors(data.draftErrors ?? []);
@@ -187,13 +192,17 @@ export function TeamGoalCoach({
 
   return (
     <div style={{ marginBottom: 10, padding: 8, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Alignment · Goal Coach</div>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+        {t("team.coach.title")}
+      </div>
       <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.4 }}>
-        P0: single facilitator with Skills + model. Multi-seat room is next (see Alignment Room docs).
+        {t("team.coach.subtitle")}
       </div>
 
       <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Skills</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+          {t("team.coach.skills")}
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {skillChoices.slice(0, 12).map((s) => {
             const on = selectedSkills.includes(s.name);
@@ -222,18 +231,20 @@ export function TeamGoalCoach({
         </div>
         {sessionId && (
           <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 4 }}>
-            Skills locked for this sticky session.
+            {t("team.coach.skillsLocked")}
           </div>
         )}
         {missingSkills.length > 0 && (
           <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 4 }}>
-            Missing skills: {missingSkills.join(", ")}
+            {t("team.coach.missingSkills", { skills: missingSkills.join(", ") })}
           </div>
         )}
       </div>
 
       <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Model</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+          {t("team.coach.model")}
+        </div>
         <select
           value={modelValue}
           disabled={running || Boolean(sessionId) || models.length === 0}
@@ -253,7 +264,7 @@ export function TeamGoalCoach({
           }}
         >
           {models.length === 0 ? (
-            <option value="">Session default model</option>
+            <option value="">{t("team.coach.sessionDefaultModel")}</option>
           ) : (
             models.map((m) => (
               <option key={`${m.provider}/${m.id}`} value={`${m.provider}:::${m.id}`}>
@@ -281,7 +292,9 @@ export function TeamGoalCoach({
               }}
             >
               <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 2 }}>
-                {m.role === "user" ? "You" : "Coach"}
+                {m.role === "user"
+                  ? t("team.coach.you")
+                  : t("team.coach.coach")}
               </div>
               {m.text}
             </div>
@@ -294,7 +307,7 @@ export function TeamGoalCoach({
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            placeholder="Raw idea (optional) — or leave blank to start grill-style interview"
+            placeholder={t("team.coach.ideaPlaceholder")}
             rows={3}
             style={inputStyle}
             disabled={running || !cwd}
@@ -304,7 +317,9 @@ export function TeamGoalCoach({
             disabled={running || !cwd}
             style={btnStyle(running || !cwd)}
           >
-            {running ? "Coach thinking…" : "Start alignment"}
+            {running
+              ? t("team.coach.thinking")
+              : t("team.coach.start")}
           </button>
         </>
       ) : (
@@ -312,7 +327,7 @@ export function TeamGoalCoach({
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            placeholder="Reply to the coach…"
+            placeholder={t("team.coach.replyPlaceholder")}
             rows={2}
             style={inputStyle}
             disabled={running}
@@ -323,7 +338,9 @@ export function TeamGoalCoach({
               disabled={running || !reply.trim()}
               style={{ ...btnStyle(running || !reply.trim()), flex: 1 }}
             >
-              {running ? "Coach thinking…" : "Send reply"}
+              {running
+                ? t("team.coach.thinking")
+                : t("team.coach.sendReply")}
             </button>
             {onOpenSession && sessionId && (
               <button
@@ -337,7 +354,7 @@ export function TeamGoalCoach({
                   border: "1px solid var(--border)",
                 }}
               >
-                Open chat
+                {t("team.coach.openChat")}
               </button>
             )}
           </div>
@@ -347,10 +364,19 @@ export function TeamGoalCoach({
       {draft && (
         <div style={{ marginTop: 8, padding: 8, borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-panel)" }}>
           <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-            Draft Goal Spec {draftErrors.length === 0 ? "✓ ready" : "(needs fixes)"}
+            {draftErrors.length === 0
+              ? t("team.coach.draftReady")
+              : t("team.coach.draftNeedsFixes")}
           </div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
-            {`Outcome: ${draft.outcome || "—"}\nPrimary Path: ${draft.primaryPath || "—"}\nChecks (${draft.acceptanceChecks.length}):\n${draft.acceptanceChecks.map((c, i) => `  ${i + 1}. ${c}`).join("\n") || "  —"}`}
+            {t("team.coach.draftSummary", {
+              outcome: draft.outcome || "—",
+              primaryPath: draft.primaryPath || "—",
+              count: draft.acceptanceChecks.length,
+              checks:
+                draft.acceptanceChecks.map((c, i) => `  ${i + 1}. ${c}`).join("\n") ||
+                "  —",
+            })}
           </div>
           {draftErrors.length > 0 && (
             <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>
@@ -366,7 +392,7 @@ export function TeamGoalCoach({
               background: draftErrors.length === 0 ? "var(--accent)" : "#64748b",
             }}
           >
-            Apply draft to form
+            {t("team.coach.applyDraft")}
           </button>
         </div>
       )}

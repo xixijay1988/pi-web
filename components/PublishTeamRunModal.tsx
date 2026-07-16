@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 import { validateGoalSpec } from "@/lib/team-runs/goal-spec";
 
@@ -19,6 +20,7 @@ export function PublishTeamRunModal({
   onClose: () => void;
   onPublished: (runId: string) => void;
 }) {
+  const { t } = useI18n();
   const [outcome, setOutcome] = useState(initial?.outcome ?? "");
   const [primaryPath, setPrimaryPath] = useState(initial?.primaryPath ?? "");
   const [acceptanceText, setAcceptanceText] = useState(
@@ -50,7 +52,7 @@ export function PublishTeamRunModal({
 
   const publish = async () => {
     if (!preview.ok || !preview.spec) {
-      setError(preview.errors.join("; ") || "Goal Spec incomplete");
+      setError(preview.errors.join("; ") || t("team.publish.goalIncomplete"));
       return;
     }
     setBusy(true);
@@ -77,7 +79,7 @@ export function PublishTeamRunModal({
         errors?: string[];
       };
       if (!res.ok) throw new Error(data.error || data.errors?.join("; ") || `HTTP ${res.status}`);
-      if (!data.run?.id) throw new Error("No run id returned");
+      if (!data.run?.id) throw new Error(t("team.publish.noRunId"));
       onPublished(data.run.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -117,14 +119,14 @@ export function PublishTeamRunModal({
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 650 }}>Publish Goal to Team</div>
+            <div style={{ fontSize: 15, fontWeight: 650 }}>
+              {t("team.publish.title")}
+            </div>
             <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4, lineHeight: 1.4 }}>
-              Confirm Goal Spec from Chat (e.g. after grill-me), then start a Team Run for
-              {" "}
-              <code style={{ fontSize: 11 }}>{shorten(cwd)}</code>
+              {t("team.publish.subtitle", { path: shorten(cwd) })}
             </div>
           </div>
-          <button onClick={onClose} style={ghostBtn} aria-label="Close">✕</button>
+          <button onClick={onClose} style={ghostBtn} aria-label={t("common.close")}>✕</button>
         </div>
 
         {(warnings?.length ?? 0) > 0 && (
@@ -133,30 +135,32 @@ export function PublishTeamRunModal({
           </div>
         )}
 
-        <Field label="Outcome *">
+        <Field label={t("team.publish.outcome")}>
           <textarea value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={2} style={fieldStyle} />
         </Field>
-        <Field label="Primary Path *">
+        <Field label={t("team.publish.primaryPath")}>
           <textarea
             value={primaryPath}
             onChange={(e) => setPrimaryPath(e.target.value)}
             rows={2}
             style={fieldStyle}
-            placeholder="How a human opens/uses it"
+            placeholder={t("team.publish.primaryPathPlaceholder")}
           />
         </Field>
-        <Field label="Acceptance checks * (one per line, ≥3)">
+        <Field label={t("team.publish.acceptanceChecks")}>
           <textarea value={acceptanceText} onChange={(e) => setAcceptanceText(e.target.value)} rows={4} style={fieldStyle} />
         </Field>
         <details style={{ marginBottom: 8 }}>
-          <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>Optional</summary>
-          <Field label="Constraints">
+          <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>
+            {t("team.publish.optional")}
+          </summary>
+          <Field label={t("team.publish.constraints")}>
             <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} rows={2} style={fieldStyle} />
           </Field>
-          <Field label="Out of scope">
+          <Field label={t("team.publish.outOfScope")}>
             <textarea value={outOfScope} onChange={(e) => setOutOfScope(e.target.value)} rows={2} style={fieldStyle} />
           </Field>
-          <Field label="Discussion notes (from Chat)">
+          <Field label={t("team.publish.discussionNotes")}>
             <textarea value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} rows={4} style={fieldStyle} />
           </Field>
         </details>
@@ -171,7 +175,9 @@ export function PublishTeamRunModal({
         )}
 
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onClose} disabled={busy} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
+          <button onClick={onClose} disabled={busy} style={{ ...secondaryBtn, flex: 1 }}>
+            {t("common.cancel")}
+          </button>
           <button
             onClick={() => void publish()}
             disabled={busy || !preview.ok}
@@ -182,7 +188,9 @@ export function PublishTeamRunModal({
               cursor: busy || !preview.ok ? "not-allowed" : "pointer",
             }}
           >
-            {busy ? "Publishing…" : "Confirm & start Team Run"}
+            {busy
+              ? t("team.publish.publishing")
+              : t("team.publish.confirmStart")}
           </button>
         </div>
       </div>

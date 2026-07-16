@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useI18n } from "@/hooks/useI18n";
 import type { SkillSearchResult } from "@/lib/api-types";
 
 interface Skill {
@@ -29,6 +30,15 @@ function sourceLabel(skill: Skill): string {
   return "path";
 }
 
+type Translator = ReturnType<typeof useI18n>["t"];
+
+function localizeInstalls(installs: string, t: Translator): string {
+  const match = installs.match(/^([\d.,]+[KMB]?)\s+installs?$/);
+  return match
+    ? t("extensions.skills.installs", { count: match[1] })
+    : installs;
+}
+
 function Toggle({
   enabled,
   loading,
@@ -38,14 +48,16 @@ function Toggle({
   loading: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <button
       onClick={onToggle}
       disabled={loading}
       title={
         enabled
-          ? "Visible in model prompt — click to disable"
-          : "Hidden from model prompt — click to enable"
+          ? t("extensions.skills.toggleVisible")
+          : t("extensions.skills.toggleHidden")
       }
       style={{
         flexShrink: 0,
@@ -91,6 +103,7 @@ function SkillDetail({
   toggling: boolean;
   saveError: string | null;
 }) {
+  const { t } = useI18n();
   const label = sourceLabel(skill);
   const enabled = !skill.disableModelInvocation;
 
@@ -120,7 +133,7 @@ function SkillDetail({
               label === "project" ? "rgba(99,102,241,0.8)" : "var(--text-dim)",
           }}
         >
-          {label}
+          {t(`extensions.scope.${label}` as never)}
         </span>
         <span
           style={{
@@ -151,7 +164,7 @@ function SkillDetail({
         <span
           style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}
         >
-          Name
+          {t("extensions.skills.name")}
         </span>
         <span
           style={{
@@ -168,7 +181,7 @@ function SkillDetail({
         <span
           style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}
         >
-          Description
+          {t("extensions.skills.description")}
         </span>
         <span
           style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6 }}
@@ -187,6 +200,7 @@ function AddSkillPanel({
   cwd: string;
   onInstalled: () => void;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SkillSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -217,17 +231,23 @@ function AddSkillPanel({
         error?: string;
       };
       if (d.error) {
-        setSearchError(d.error);
+        setSearchError(
+          t("extensions.skills.searchError", { error: d.error }),
+        );
         return;
       }
       setResults(d.results ?? []);
-      if ((d.results ?? []).length === 0) setSearchError("No skills found");
+      if ((d.results ?? []).length === 0) {
+        setSearchError(t("extensions.skills.noSkillsFound"));
+      }
     } catch (e) {
-      setSearchError(String(e));
+      setSearchError(
+        t("extensions.skills.searchError", { error: String(e) }),
+      );
     } finally {
       setSearching(false);
     }
-  }, []);
+  }, [t]);
 
   const install = useCallback(
     async (pkg: string) => {
@@ -241,18 +261,24 @@ function AddSkillPanel({
         });
         const d = (await res.json()) as { success?: boolean; error?: string };
         if (!res.ok || d.error) {
-          setInstallError(d.error ?? `HTTP ${res.status}`);
+          setInstallError(
+            t("extensions.skills.installError", {
+              error: d.error ?? `HTTP ${res.status}`,
+            }),
+          );
           return;
         }
         setInstalledPkgs((prev) => new Set(prev).add(pkg));
         onInstalled();
       } catch (e) {
-        setInstallError(String(e));
+        setInstallError(
+          t("extensions.skills.installError", { error: String(e) }),
+        );
       } finally {
         setInstalling(null);
       }
     },
-    [onInstalled, scope, cwd],
+    [onInstalled, scope, cwd, t],
   );
 
   const installPath =
@@ -272,7 +298,7 @@ function AddSkillPanel({
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
-          Add Skill
+          {t("extensions.skills.addTitle")}
         </div>
 
         {/* Search row */}
@@ -284,7 +310,7 @@ function AddSkillPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter") search(query);
             }}
-            placeholder="e.g. react, testing, deploy"
+            placeholder={t("extensions.skills.searchPlaceholder")}
             style={{
               flex: 1,
               padding: "7px 10px",
@@ -311,7 +337,9 @@ function AddSkillPanel({
               flexShrink: 0,
             }}
           >
-            {searching ? "Searching…" : "Search"}
+            {searching
+              ? t("extensions.skills.searching")
+              : t("extensions.skills.search")}
           </button>
         </div>
 
@@ -342,7 +370,7 @@ function AddSkillPanel({
                     s === "global" ? "1px solid var(--border)" : "none",
                 }}
               >
-                {s}
+                {t(`extensions.scope.${s}` as never)}
               </button>
             ))}
           </div>
@@ -431,7 +459,7 @@ function AddSkillPanel({
                         fontWeight: 500,
                       }}
                     >
-                      {r.installs}
+                      {localizeInstalls(r.installs, t)}
                     </span>
                     {r.url && (
                       <a
@@ -475,10 +503,10 @@ function AddSkillPanel({
                   }}
                 >
                   {isInstalled
-                    ? "✓ Installed"
+                    ? t("extensions.skills.installed")
                     : isInstalling
-                      ? "Installing…"
-                      : "Install"}
+                      ? t("extensions.skills.installing")
+                      : t("extensions.skills.install")}
                 </button>
               </div>
             );
@@ -490,7 +518,7 @@ function AddSkillPanel({
           <div
             style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.8 }}
           >
-            Search{" "}
+            {t("extensions.skills.searchIntroBefore")}{" "}
             <a
               href="https://skills.sh"
               target="_blank"
@@ -499,7 +527,7 @@ function AddSkillPanel({
             >
               skills.sh
             </a>{" "}
-            to discover and install skills for your agent.
+            {t("extensions.skills.searchIntroAfter")}
           </div>
         )
       )}
@@ -515,6 +543,7 @@ export function SkillsConfig({
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
+  const { t } = useI18n();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -530,16 +559,22 @@ export function SkillsConfig({
       .then((r) => r.json())
       .then((d: { skills?: Skill[]; error?: string }) => {
         if (d.error) {
-          setError(d.error);
+          setError(
+            t("extensions.skills.loadError", { error: d.error }),
+          );
           return;
         }
         const list = d.skills ?? [];
         setSkills(list);
         if (list.length > 0 && !selected) setSelected(list[0].filePath);
       })
-      .catch((e) => setError(String(e)))
+      .catch((e) =>
+        setError(
+          t("extensions.skills.loadError", { error: String(e) }),
+        ),
+      )
       .finally(() => setLoading(false));
-  }, [cwd, selected]);
+  }, [cwd, selected, t]);
 
   useEffect(() => {
     loadSkills();
@@ -560,7 +595,11 @@ export function SkillsConfig({
       });
       const d = (await res.json()) as { success?: boolean; error?: string };
       if (!res.ok || d.error) {
-        setSaveError(d.error ?? `HTTP ${res.status}`);
+        setSaveError(
+          t("extensions.skills.saveError", {
+            error: d.error ?? `HTTP ${res.status}`,
+          }),
+        );
         return;
       }
       setSkills((prev) =>
@@ -571,7 +610,9 @@ export function SkillsConfig({
         ),
       );
     } catch (e) {
-      setSaveError(String(e));
+      setSaveError(
+        t("extensions.skills.saveError", { error: String(e) }),
+      );
     } finally {
       setToggling((s) => {
         const n = new Set(s);
@@ -579,7 +620,7 @@ export function SkillsConfig({
         return n;
       });
     }
-  }, []);
+  }, [t]);
 
   const selectedSkill = skills.find((s) => s.filePath === selected) ?? null;
 
@@ -628,7 +669,7 @@ export function SkillsConfig({
             <span
               style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}
             >
-              Skills
+              {t("extensions.skills.title")}
             </span>
             <code
               style={{
@@ -646,6 +687,7 @@ export function SkillsConfig({
           </div>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             style={{
               background: "none",
               border: "none",
@@ -684,7 +726,7 @@ export function SkillsConfig({
                     color: "var(--text-muted)",
                   }}
                 >
-                  Loading…
+                  {t("common.loading")}
                 </div>
               ) : error ? (
                 <div
@@ -704,7 +746,7 @@ export function SkillsConfig({
                     color: "var(--text-dim)",
                   }}
                 >
-                  No skills found
+                  {t("extensions.skills.noSkillsFound")}
                 </div>
               ) : (
                 (() => {
@@ -729,7 +771,7 @@ export function SkillsConfig({
                             letterSpacing: "0.06em",
                           }}
                         >
-                          {grpLabel}
+                          {t(`extensions.scope.${grpLabel}` as never)}
                         </div>
                         {grpSkills.map((skill) => {
                           const isSelected =
@@ -846,7 +888,7 @@ export function SkillsConfig({
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Add skill
+                {t("extensions.skills.addButton")}
               </div>
             </div>
           </div>
@@ -880,7 +922,7 @@ export function SkillsConfig({
                   fontSize: 13,
                 }}
               >
-                Select a skill
+                {t("extensions.skills.selectSkill")}
               </div>
             )}
           </div>
@@ -909,7 +951,7 @@ export function SkillsConfig({
               fontSize: 13,
             }}
           >
-            Close
+            {t("common.close")}
           </button>
         </div>
       </div>
