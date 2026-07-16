@@ -74,7 +74,7 @@ Do not expand into peer channels or parallel execution unless explicitly request
 
 ---
 
-### Q4 — Acceptance checklist persistence (medium value, small)
+### Q4 — Acceptance checklist persistence (medium value, small) — **DONE**
 
 **Problem:** checklist pass/fail state is local React state; refresh loses it.
 
@@ -83,6 +83,8 @@ Do not expand into peer channels or parallel execution unless explicitly request
 2. Prefer server truth if rework must see them  
 
 **Done when:** reload on awaiting_human keeps marks.
+
+**Landed:** checklist marks persist in `localStorage` under `pi-team-acceptance-checks:<runId>`; parsing filters stale/invalid check ids and values; initial hydration is guarded so the first render cannot overwrite restored state; Rework continues sending restored failed labels to server truth.
 
 ---
 

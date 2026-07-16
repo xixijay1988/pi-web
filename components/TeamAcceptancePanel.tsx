@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import {
+  acceptanceChecklistStorageKey,
+  parseAcceptanceChecklistState,
+  serializeAcceptanceChecklistState,
+  type AcceptanceCheckState,
+} from "@/lib/team-runs/acceptance-checklist-state";
 import type { PlanNode, TeamRun } from "@/lib/team-runs/types";
 import { MarkdownBody } from "./MarkdownBody";
 
@@ -13,8 +19,6 @@ type ArtifactCard = {
   missing?: boolean;
   error?: string;
 };
-
-type CheckState = "unchecked" | "pass" | "fail";
 
 type EvidenceSummary = {
   changed: string[];
@@ -40,7 +44,8 @@ export function TeamAcceptancePanel({
 }) {
   const [cards, setCards] = useState<ArtifactCard[]>([]);
   const [feedback, setFeedback] = useState("");
-  const [checkState, setCheckState] = useState<Record<string, CheckState>>({});
+  const [checkState, setCheckState] = useState<Record<string, AcceptanceCheckState>>({});
+  const [loadedChecklistKey, setLoadedChecklistKey] = useState<string | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
   const ready = run.status === "awaiting_human_acceptance";
@@ -67,11 +72,34 @@ export function TeamAcceptancePanel({
     });
   }, [run.goalSpec]);
 
+  const checklistStorageKey = acceptanceChecklistStorageKey(run.id);
+  const checklistSignature = checks.map((check) => check.id).join("\n");
+
   useEffect(() => {
-    setCheckState({});
+    const allowedIds = checklistSignature ? checklistSignature.split("\n") : [];
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(checklistStorageKey);
+    } catch {
+      raw = null;
+    }
+    const restored = parseAcceptanceChecklistState(raw, allowedIds);
+    setCheckState(restored);
+    setLoadedChecklistKey(checklistStorageKey);
     setExpandedKey(null);
     setShowEvidenceDrawer(false);
-  }, [run.id, run.goal, run.goalSpec?.primaryPath]);
+  }, [checklistStorageKey, checklistSignature]);
+
+  useEffect(() => {
+    if (loadedChecklistKey !== checklistStorageKey) return;
+    const serialized = serializeAcceptanceChecklistState(checkState);
+    try {
+      if (serialized === "{}") window.localStorage.removeItem(checklistStorageKey);
+      else window.localStorage.setItem(checklistStorageKey, serialized);
+    } catch {
+      return;
+    }
+  }, [checkState, checklistStorageKey, loadedChecklistKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,7 +230,7 @@ export function TeamAcceptancePanel({
   const cycleCheck = (id: string) => {
     setCheckState((prev) => {
       const cur = prev[id] ?? "unchecked";
-      const next: CheckState = cur === "unchecked" ? "pass" : cur === "pass" ? "fail" : "unchecked";
+      const next: AcceptanceCheckState = cur === "unchecked" ? "pass" : cur === "pass" ? "fail" : "unchecked";
       return { ...prev, [id]: next };
     });
   };
@@ -315,7 +343,7 @@ export function TeamAcceptancePanel({
       <section style={sectionBox}>
         <div style={sectionTitle}>2. 按 Goal Spec 逐项验收</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-          点击切换：未检 → 通过 → 失败。建议全部通过后再 Accept。
+          点击切换：未检 → 通过 → 失败。状态保存在本机，刷新后仍会保留。建议全部通过后再 Accept。
         </div>
         {checks.length === 0 ? (
           <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无结构化检查项 — 请结合 Goal Spec 自行判断。</div>

@@ -17,6 +17,7 @@ This document is the **stage report** for humans and successor agents. It record
 | Q1 Structured rework | **Shipped** | `lastRework` + `.team/notes.md` + brief FAIL checks |
 | Q2 False-green fixtures | **Shipped** | Todo HTTP-only red fixture + verified green fixture |
 | Q3 Validation visibility | **Shipped** | pinned header summary + Timeline hard-error cards |
+| Q4 Checklist persistence | **Shipped** | run-scoped localStorage with safe hydration |
 | Alignment P2 polish | **Pending** | streaming, history, multi-seat full-screen |
 | Execution peer channels | **Deferred** | ADR 0007 / ADR 0002 |
 
@@ -105,6 +106,7 @@ Human acceptance UI:
 - Goal Spec checklist (Primary Path + checks)  
 - Fail marks block Accept  
 - Rework feedback auto-includes failed checks  
+- Checklist marks survive refresh on the same browser/run
 
 Observability:
 - `artifact_validation_failed` stores full hard errors, warnings, and paths

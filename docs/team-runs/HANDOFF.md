@@ -4,7 +4,7 @@
 **Repo:** `/Users/dawn/code/agent/pi-web`  
 **Branch:** `dev` (track `origin/dev`; tip at handoff finalize: run `git rev-parse --short HEAD`)  
 **Remote:** `git@github.com:xixijay1988/pi-web.git`  
-**Next session focus:** **Q4 acceptance checklist persistence**. Q1–Q3 quality work is shipped.
+**Next session focus:** **Alignment P2 polish** (quality queue Q1–Q4 is shipped).
 
 ---
 
@@ -54,6 +54,7 @@ Highlights:
 - Brief injects Goal Spec + structured **human rework notes**
 - Acceptance UI Goal Spec checklist; failed checks feed rework  
 - Timeline and run header pin full validation failures with artifact links
+- Acceptance checklist marks survive refresh per run in the same browser
 
 ### Alignment / Chat import
 - Full-screen **TeamAlignmentWorkspace** (discussion UX)  
@@ -64,6 +65,7 @@ Highlights:
 - Choice parser prefers `A) B)`; rejects procedural `1. npm install` steps  
 
 ### Recent commits (newest first)
+- `5a51291` Surface Team validation failures
 - `319ca76` Add false-green Team regression fixtures
 - `036973b` Structure Team rework feedback
 - `8d6f560` Converge acceptance evidence into summary-first UX
@@ -122,8 +124,9 @@ Dev: `npm run dev` port **30141**.
 
 See `docs/team-runs/phases/next-plan.md`. Top queue:
 
-1. Acceptance checklist persistence across refresh
-2. Only then Alignment P2 (streaming, multi-seat full-screen, history)
+1. Alignment P2: multi-seat full-screen parity
+2. Alignment P2: streaming/non-blocking turn progress
+3. Alignment room history/resume/abandon polish
 
 ---
 

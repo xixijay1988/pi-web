@@ -13,6 +13,7 @@ export * from "./paths";
 export * from "./store";
 export * from "./validate";
 export * from "./validation-failure";
+export * from "./acceptance-checklist-state";
 export * from "./plan-parse";
 export * from "./budget";
 export * from "./transitions";

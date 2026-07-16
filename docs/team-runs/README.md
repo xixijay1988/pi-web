@@ -31,7 +31,7 @@ Team is a parallel mode.
 
 ## Quality gates (anti false-green)
 
-Hard validators require Primary Path documentation/verification on contract, change-summary, test-report (`primary: pass`), and acceptance (`primary_path_verified: true` + independent evidence). False-green Todo fixtures cover HTTP-only testing and reviewer hearsay. Dispatch briefs inject Goal Spec checks and structured human rework notes. Validation failures are pinned with full errors and artifact links. Final acceptance UI shows a Goal Spec checklist; failed items feed rework feedback.
+Hard validators require Primary Path documentation/verification on contract, change-summary, test-report (`primary: pass`), and acceptance (`primary_path_verified: true` + independent evidence). False-green Todo fixtures cover HTTP-only testing and reviewer hearsay. Dispatch briefs inject Goal Spec checks and structured human rework notes. Validation failures are pinned with full errors and artifact links. Final acceptance UI shows a Goal Spec checklist, persists its marks locally across refresh, and feeds failed items into rework.
 
 ## Goal Spec (anti false-green)
 
