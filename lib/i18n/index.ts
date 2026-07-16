@@ -19,6 +19,12 @@ export function translate(
   key: TranslationKey,
   variables?: TranslationVariables,
 ): string {
-  const template = dictionaries[locale][key] ?? en[key];
+  const runtimeKey = key as string;
+  const localized = (dictionaries[locale] as Record<string, string | undefined>)[runtimeKey];
+  const fallback = (en as Record<string, string | undefined>)[runtimeKey];
+  const template = localized ?? fallback ?? runtimeKey;
+  if (!localized && process.env.NODE_ENV === "development") {
+    console.warn(`[i18n] Missing translation key: ${runtimeKey} (${locale})`);
+  }
   return interpolate(template, variables);
 }

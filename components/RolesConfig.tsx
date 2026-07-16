@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useI18n } from "@/hooks/useI18n";
 import type { RoleTemplate, TeamToolPreset } from "@/lib/team-runs/types";
 
 type ModelEntry = { id: string; name: string; provider: string };
@@ -16,6 +17,7 @@ export function RolesConfig({
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
+  const { t } = useI18n();
   const [scope, setScope] = useState<"global" | "project">("global");
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function RolesConfig({
         setRoles(d.roles ?? []);
         setSelectedId((id) => id ?? d.roles?.[0]?.roleId ?? null);
       } else {
-        if (!cwd) throw new Error("Select a project cwd to edit project role overrides");
+        if (!cwd) throw new Error(t("roles.selectProject"));
         const res = await fetch(`/api/team-roles/project?cwd=${encodeURIComponent(cwd)}`);
         const d = await res.json() as { overrides?: RoleTemplate[]; resolved?: RoleTemplate[]; error?: string };
         if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
@@ -65,7 +67,7 @@ export function RolesConfig({
     } finally {
       setLoading(false);
     }
-  }, [scope, cwd]);
+  }, [scope, cwd, t]);
 
   useEffect(() => {
     void load();
@@ -92,7 +94,7 @@ export function RolesConfig({
         if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
         setRoles(d.roles ?? roles);
       } else {
-        if (!cwd) throw new Error("cwd required");
+        if (!cwd) throw new Error(t("roles.selectProject"));
         const res = await fetch("/api/team-roles/project", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -155,9 +157,9 @@ export function RolesConfig({
           }}
         >
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Team Roles</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{t("roles.title")}</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-              Configure Role Templates (name, model, tools). Project overrides win on the same roleId.
+              {t("roles.subtitle")}
             </div>
           </div>
           <button
@@ -171,7 +173,7 @@ export function RolesConfig({
               cursor: "pointer",
             }}
           >
-            Close
+            {t("common.close")}
           </button>
         </div>
 
@@ -192,7 +194,7 @@ export function RolesConfig({
                 fontSize: 12,
               }}
             >
-              {s === "global" ? "Global" : "Project override"}
+              {s === "global" ? t("roles.global") : t("roles.projectOverride")}
             </button>
           ))}
           <div style={{ flex: 1 }} />
@@ -210,7 +212,7 @@ export function RolesConfig({
               opacity: saving ? 0.7 : 1,
             }}
           >
-            {savedFlash ? "Saved" : saving ? "Saving…" : "Save"}
+            {savedFlash ? t("common.saved") : saving ? t("common.saving") : t("common.save")}
           </button>
         </div>
 
@@ -228,7 +230,7 @@ export function RolesConfig({
             }}
           >
             {loading ? (
-              <div style={{ fontSize: 12, color: "var(--text-dim)", padding: 8 }}>Loading…</div>
+              <div style={{ fontSize: 12, color: "var(--text-dim)", padding: 8 }}>{t("common.loading")}</div>
             ) : (
               roles.map((r) => (
                 <button
@@ -255,27 +257,27 @@ export function RolesConfig({
 
           <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
             {!selected ? (
-              <div style={{ color: "var(--text-dim)", fontSize: 13 }}>No role selected</div>
+              <div style={{ color: "var(--text-dim)", fontSize: 13 }}>{t("roles.noSelection")}</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 560 }}>
-                <Field label="Display name">
+                <Field label={t("roles.displayName")}>
                   <input
                     value={selected.name}
                     onChange={(e) => updateSelected({ name: e.target.value })}
                     style={inputStyle}
                   />
                 </Field>
-                <Field label="roleId (stable)">
+                <Field label={t("roles.roleId")}>
                   <input value={selected.roleId} disabled style={{ ...inputStyle, opacity: 0.7 }} />
                 </Field>
-                <Field label="Description">
+                <Field label={t("roles.description")}>
                   <input
                     value={selected.description}
                     onChange={(e) => updateSelected({ description: e.target.value })}
                     style={inputStyle}
                   />
                 </Field>
-                <Field label="Model">
+                <Field label={t("roles.model")}>
                   <select
                     value={selected.provider && selected.modelId ? `${selected.provider}:::${selected.modelId}` : ""}
                     onChange={(e) => {
@@ -289,13 +291,13 @@ export function RolesConfig({
                     }}
                     style={inputStyle}
                   >
-                    <option value="">(use global default later)</option>
+                    <option value="">{t("roles.useGlobalModel")}</option>
                     {modelOptions.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </Field>
-                <Field label="Tool preset">
+                <Field label={t("roles.toolPreset")}>
                   <select
                     value={selected.toolPreset}
                     onChange={(e) => updateSelected({ toolPreset: e.target.value as TeamToolPreset })}
@@ -306,7 +308,7 @@ export function RolesConfig({
                     ))}
                   </select>
                 </Field>
-                <Field label="System prompt / responsibilities">
+                <Field label={t("roles.systemPrompt")}>
                   <textarea
                     value={selected.systemPrompt}
                     onChange={(e) => updateSelected({ systemPrompt: e.target.value })}
@@ -341,4 +343,3 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   outline: "none",
 };
-
