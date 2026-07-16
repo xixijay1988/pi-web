@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { AlignmentRoom } from "@/lib/team-runs/alignment-types";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
+import { useI18n } from "@/hooks/useI18n";
 
 type ModelOption = { id: string; name: string; provider: string };
 
@@ -23,6 +24,7 @@ export function TeamAlignmentRoom({
   onPublishedRun?: (runId: string) => void;
   onOpenSession?: (sessionId: string) => void;
 }) {
+  const { t } = useI18n();
   const [idea, setIdea] = useState("");
   const [humanMsg, setHumanMsg] = useState("");
   const [room, setRoom] = useState<AlignmentRoom | null>(null);
@@ -80,7 +82,7 @@ export function TeamAlignmentRoom({
 
   const createRoom = async () => {
     if (!cwd) {
-      onError("Select a project cwd first.");
+      onError(t("team.room.selectProject"));
       return;
     }
     setBusy(true);
@@ -107,7 +109,7 @@ export function TeamAlignmentRoom({
       const data = (await res.json()) as { alignment?: AlignmentRoom; error?: string };
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setRoom(data.alignment ?? null);
-      setLastMeta("Room created — send a message or Advance turns.");
+      setLastMeta(t("team.room.noTurns"));
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -137,8 +139,8 @@ export function TeamAlignmentRoom({
       if (!res.ok) throw new Error(data.error || data.errors?.join("; ") || `HTTP ${res.status}`);
       const next = data.alignment ?? data.room;
       if (next) setRoom(next);
-      if (type === "advance") setLastMeta(`Turn: ${data.seatId ?? "?"}`);
-      if (type === "synthesize") setLastMeta("Synthesize pass done");
+      if (type === "advance") setLastMeta(t("team.room.turn", { seat: data.seatId ?? "?" }));
+      if (type === "synthesize") setLastMeta(t("team.room.synthesize"));
       if (type === "publish" && data.run?.id) {
         setLastMeta(`Published Team Run ${data.run.id}`);
         onPublishedRun?.(data.run.id);
@@ -175,7 +177,7 @@ export function TeamAlignmentRoom({
         style={selectStyle}
       >
         {models.length === 0 ? (
-          <option value="">Default model</option>
+          <option value="">{t("team.room.defaultModel")}</option>
         ) : (
           models.map((m) => (
             <option key={`${m.provider}/${m.id}`} value={`${m.provider}:::${m.id}`}>
@@ -189,9 +191,9 @@ export function TeamAlignmentRoom({
 
   return (
     <div style={{ marginBottom: 10, padding: 8, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Alignment Room (multi-seat)</div>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{t("team.room.title")}</div>
       <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.4 }}>
-        Serial multi-model discussion before execute. Facilitator + Architect critic (optional Product).
+        {t("team.room.subtitle")}
       </div>
 
       {!room ? (
@@ -199,17 +201,17 @@ export function TeamAlignmentRoom({
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            placeholder="Raw idea / problem statement"
+            placeholder={t("team.room.ideaPlaceholder")}
             rows={2}
             style={inputStyle}
             disabled={running || !cwd}
           />
           <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-            {modelSelect("Facilitator model", facProvider, facModelId, (p, id) => {
+            {modelSelect(t("team.room.facilitatorModel"), facProvider, facModelId, (p, id) => {
               setFacProvider(p);
               setFacModelId(id);
             }, running)}
-            {modelSelect("Architect critic", archProvider, archModelId, (p, id) => {
+            {modelSelect(t("team.room.architectModel"), archProvider, archModelId, (p, id) => {
               setArchProvider(p);
               setArchModelId(id);
             }, running)}
@@ -221,18 +223,18 @@ export function TeamAlignmentRoom({
               disabled={running}
               onChange={(e) => setIncludeProduct(e.target.checked)}
             />
-            Include Product critic seat
+            {t("team.room.includeProduct")}
           </label>
           <button onClick={() => void createRoom()} disabled={running || !cwd} style={btnStyle(running || !cwd)}>
-            {running ? "Creating…" : "Open multi-seat room"}
+            {running ? t("team.room.creating") : t("team.room.create")}
           </button>
         </>
       ) : (
         <>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, lineHeight: 1.4 }}>
-            Status: <strong style={{ color: "var(--text)" }}>{room.status}</strong>
-            {" · "}turns {room.turnCount}/{room.budget.maxTurns}
-            {" · "}next: {room.participants.filter((p) => p.enabled)[room.nextSeatIndex % Math.max(1, room.participants.filter((p) => p.enabled).length)]?.name ?? "—"}
+            {t("team.room.status", { status: room.status })}
+            {" · "}{t("team.room.turns", { current: room.turnCount, max: room.budget.maxTurns })}
+            {" · "}{t("team.room.next", { name: room.participants.filter((p) => p.enabled)[room.nextSeatIndex % Math.max(1, room.participants.filter((p) => p.enabled).length)]?.name ?? "—" })}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
             {room.participants.filter((p) => p.enabled).map((p) => (
@@ -254,7 +256,7 @@ export function TeamAlignmentRoom({
                     onClick={() => onOpenSession(p.sessionId!)}
                     style={{ marginLeft: 4, border: "none", background: "transparent", color: "var(--accent)", cursor: "pointer", fontSize: 10 }}
                   >
-                    open
+                    {t("team.room.open")}
                   </button>
                 ) : null}
               </span>
@@ -263,12 +265,12 @@ export function TeamAlignmentRoom({
 
           <div style={{ maxHeight: 200, overflow: "auto", marginBottom: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {room.transcript.length === 0 ? (
-              <div style={{ fontSize: 11, color: "var(--text-dim)" }}>No turns yet. Message and/or Advance.</div>
+              <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("team.room.noTurns")}</div>
             ) : (
               room.transcript.map((m) => {
                 const who =
                   m.from === "human"
-                    ? "You"
+                    ? t("team.room.you")
                     : (room.participants.find((p) => p.seatId === m.from)?.name ?? m.from);
                 return (
                   <div
@@ -296,7 +298,7 @@ export function TeamAlignmentRoom({
           <textarea
             value={humanMsg}
             onChange={(e) => setHumanMsg(e.target.value)}
-            placeholder="Add human guidance…"
+            placeholder={t("team.room.guidancePlaceholder")}
             rows={2}
             style={inputStyle}
             disabled={running || room.status === "consumed" || room.status === "abandoned"}
@@ -307,21 +309,21 @@ export function TeamAlignmentRoom({
               disabled={running || !humanMsg.trim() || room.status === "consumed"}
               style={{ ...btnStyle(running || !humanMsg.trim()), flex: 1 }}
             >
-              Send
+              {t("team.room.send")}
             </button>
             <button
               onClick={() => void command("advance")}
               disabled={running || room.status === "consumed"}
               style={{ ...btnStyle(running), flex: 1 }}
             >
-              {running ? "Running…" : "Next seat turn"}
+              {running ? t("team.room.running") : t("team.room.nextTurn")}
             </button>
             <button
               onClick={() => void command("synthesize")}
               disabled={running || room.status === "consumed"}
               style={{ ...btnStyle(running), flex: 1 }}
             >
-              Synthesize Goal Spec
+              {t("team.room.synthesize")}
             </button>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -332,15 +334,15 @@ export function TeamAlignmentRoom({
               disabled={running || !room.draftGoalSpec}
               style={{ ...btnStyle(running || !room.draftGoalSpec), flex: 1, background: "#64748b" }}
             >
-              Apply draft to form
+              {t("team.room.applyDraft")}
             </button>
             <button
               onClick={() => void command("publish")}
               disabled={running || !room.draftGoalSpec || room.status === "consumed"}
               style={{ ...btnStyle(running || !room.draftGoalSpec), flex: 1 }}
-              title="Validate Goal Spec, create Team Run, start engine"
+              title={t("team.room.publishTitle")}
             >
-              Publish & start Team
+              {t("team.room.publish")}
             </button>
           </div>
           {lastMeta && (
@@ -355,7 +357,7 @@ export function TeamAlignmentRoom({
             disabled={running}
             style={{ ...ghostBtn, marginTop: 6 }}
           >
-            Refresh room
+            {t("team.room.refresh")}
           </button>
         </>
       )}
