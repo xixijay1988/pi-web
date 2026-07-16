@@ -16,6 +16,7 @@ This document is the **stage report** for humans and successor agents. It record
 | Quality gates / anti false-green | **Shipped (v1)** | validators + brief rework + acceptance checklist |
 | Q1 Structured rework | **Shipped** | `lastRework` + `.team/notes.md` + brief FAIL checks |
 | Q2 False-green fixtures | **Shipped** | Todo HTTP-only red fixture + verified green fixture |
+| Q3 Validation visibility | **Shipped** | pinned header summary + Timeline hard-error cards |
 | Alignment P2 polish | **Pending** | streaming, history, multi-seat full-screen |
 | Execution peer channels | **Deferred** | ADR 0007 / ADR 0002 |
 
@@ -104,6 +105,11 @@ Human acceptance UI:
 - Goal Spec checklist (Primary Path + checks)  
 - Fail marks block Accept  
 - Rework feedback auto-includes failed checks  
+
+Observability:
+- `artifact_validation_failed` stores full hard errors, warnings, and paths
+- Run header pins the latest unresolved failure with failed node and artifact links
+- Timeline shows full validation errors and opens the failed artifact directly
 
 ### Residual risks
 - Heuristic validators can still be gamed by models writing compliant but untrue text  

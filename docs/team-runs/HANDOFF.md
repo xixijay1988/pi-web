@@ -4,7 +4,7 @@
 **Repo:** `/Users/dawn/code/agent/pi-web`  
 **Branch:** `dev` (track `origin/dev`; tip at handoff finalize: run `git rev-parse --short HEAD`)  
 **Remote:** `git@github.com:xixijay1988/pi-web.git`  
-**Next session focus:** **Q3 timeline validation errors**. Q1 structured rework and Q2 false-green fixtures are shipped.
+**Next session focus:** **Q4 acceptance checklist persistence**. Q1–Q3 quality work is shipped.
 
 ---
 
@@ -53,6 +53,7 @@ Highlights:
 - Todo false-green fixtures cover HTTP-only evidence and reviewer hearsay
 - Brief injects Goal Spec + structured **human rework notes**
 - Acceptance UI Goal Spec checklist; failed checks feed rework  
+- Timeline and run header pin full validation failures with artifact links
 
 ### Alignment / Chat import
 - Full-screen **TeamAlignmentWorkspace** (discussion UX)  
@@ -63,7 +64,10 @@ Highlights:
 - Choice parser prefers `A) B)`; rejects procedural `1. npm install` steps  
 
 ### Recent commits (newest first)
-- `ba5f9eb` Harden Team quality gates for Primary Path and rework  
+- `319ca76` Add false-green Team regression fixtures
+- `036973b` Structure Team rework feedback
+- `8d6f560` Converge acceptance evidence into summary-first UX
+- `cf497ba` Make final acceptance panel action-oriented and larger
 - `75bdc28` Fix choice parser mistaking procedure steps for options  
 - `af43b27` Expand Team alignment into full-screen discussion with choice UI  
 - `4e5f91c` Multi-seat serial Alignment Room  
@@ -118,9 +122,8 @@ Dev: `npm run dev` port **30141**.
 
 See `docs/team-runs/phases/next-plan.md`. Top queue:
 
-1. Timeline surfaces hard validation errors clearly
-2. Acceptance checklist persistence across refresh
-3. Only then Alignment P2 (streaming, multi-seat full-screen, history)
+1. Acceptance checklist persistence across refresh
+2. Only then Alignment P2 (streaming, multi-seat full-screen, history)
 
 ---
 

@@ -5,6 +5,7 @@ import { getFileName } from "@/lib/file-paths";
 import type { TeamRunListItem } from "@/lib/team-runs/types";
 import { useTeamRun } from "@/hooks/useTeamRun";
 import { latestBlockedReason, TeamTimeline } from "./TeamTimeline";
+import { latestValidationFailure } from "@/lib/team-runs/validation-failure";
 import { TeamAcceptancePanel } from "./TeamAcceptancePanel";
 import { TeamAlignmentRoom } from "./TeamAlignmentRoom";
 import { TeamAlignmentWorkspace } from "./TeamAlignmentWorkspace";
@@ -230,6 +231,7 @@ export function TeamMode({
   }, [run]);
 
   const blockedReason = run ? latestBlockedReason(run.events) : null;
+  const validationFailure = run ? latestValidationFailure(run.events, run.plan.nodes) : null;
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0, background: "var(--bg)" }}>
@@ -468,6 +470,57 @@ export function TeamMode({
                 </div>
               )}
 
+              {(validationFailure || (blockedReason && (run.status === "blocked" || run.status === "failed"))) && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: "1px solid rgba(239,68,68,0.4)",
+                    background: "rgba(239,68,68,0.08)",
+                    fontSize: 11,
+                  }}
+                >
+                  <div style={{ color: "#ef4444", fontWeight: 700, marginBottom: 5 }}>Needs attention</div>
+                  {blockedReason && (
+                    <div style={{ color: "var(--text-muted)", whiteSpace: "pre-wrap" }}>{blockedReason}</div>
+                  )}
+                  {validationFailure?.nodeId && (
+                    <div style={{ color: "var(--text-dim)", marginTop: 5 }}>
+                      Failed node: <strong style={{ color: "var(--text)" }}>{validationFailure.nodeId}</strong>
+                    </div>
+                  )}
+                  {validationFailure && (
+                    <ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "var(--text-muted)" }}>
+                      {validationFailure.hardErrors.map((failure, index) => (
+                        <li key={`${failure}-${index}`} style={{ marginBottom: 3 }}>{failure}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {validationFailure?.artifactPaths.map((path) => (
+                    <div key={path} style={{ marginTop: 6, color: "var(--text-dim)", wordBreak: "break-all" }}>
+                      {shortenPath(path)}
+                      {onOpenFile && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenFile(path, getFileName(path))}
+                          style={{
+                            marginLeft: 8,
+                            border: "none",
+                            background: "transparent",
+                            color: "var(--accent)",
+                            cursor: "pointer",
+                            fontSize: 10,
+                          }}
+                        >
+                          Open file
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                 <ActionBtn disabled={busy} onClick={() => void command("pause")}>Pause</ActionBtn>
                 <ActionBtn disabled={busy} onClick={() => void command("resume")}>Resume</ActionBtn>
@@ -701,6 +754,8 @@ export function TeamMode({
                   events={run.events}
                   status={run.status}
                   blockedReason={blockedReason}
+                  nodes={run.plan.nodes}
+                  onOpenFile={onOpenFile ? (path) => onOpenFile(path, getFileName(path)) : undefined}
                 />
 
                 <Section title="Human note">

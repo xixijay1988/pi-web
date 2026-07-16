@@ -56,7 +56,7 @@ Do not expand into peer channels or parallel execution unless explicitly request
 
 ---
 
-### Q3 — Validation errors in Timeline UI (medium value, small–medium)
+### Q3 — Validation errors in Timeline UI (medium value, small–medium) — **DONE**
 
 **Problem:** hard validation failures are easy to miss in event stream noise.
 
@@ -69,6 +69,8 @@ Do not expand into peer channels or parallel execution unless explicitly request
 - `components/TeamTimeline.tsx`, `TeamMode.tsx`  
 
 **Done when:** a failed validation is obvious within 2 seconds of opening the run.
+
+**Landed:** validation-failure events carry `hardErrors`, warnings, and paths; Timeline renders a dedicated error card with Open file actions; the run header pins the latest unresolved validation reason, node, and artifact paths; legacy events fall back to message/node data.
 
 ---
 

@@ -189,6 +189,18 @@ export type TeamRun = {
 };
 ```
 
+`artifact_validation_failed` events include structured data for UI and handoff:
+
+```ts
+data: {
+  hardErrors: string[];
+  softWarnings: string[];
+  paths: string[];
+}
+```
+
+Consumers should fall back to splitting legacy `message` text and reading the failed node's `artifactPaths` when structured data is absent.
+
 ## 3. Default roleIds (seed)
 
 | roleId | Default name | Default toolPreset |

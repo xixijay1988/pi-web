@@ -1,6 +1,7 @@
 "use client";
 
-import type { RunEvent, RunStatus } from "@/lib/team-runs/types";
+import { validationFailureDetails } from "@/lib/team-runs/validation-failure";
+import type { PlanNode, RunEvent, RunStatus } from "@/lib/team-runs/types";
 
 const ACTIVE: RunStatus[] = ["planning", "executing", "replanning", "created"];
 
@@ -8,10 +9,14 @@ export function TeamTimeline({
   events,
   status,
   blockedReason,
+  nodes = [],
+  onOpenFile,
 }: {
   events: RunEvent[];
   status: RunStatus;
   blockedReason?: string | null;
+  nodes?: PlanNode[];
+  onOpenFile?: (path: string) => void;
 }) {
   const ordered = events.slice().reverse();
 
@@ -44,43 +49,87 @@ export function TeamTimeline({
         <div style={{ fontSize: 11, color: "var(--text-dim)" }}>No events yet</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {ordered.map((e, i) => (
-            <div
-              key={`${e.at}-${e.type}-${i}`}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "64px 1fr",
-                gap: 8,
-                padding: "7px 0",
-                borderBottom: "1px solid var(--border)",
-                fontSize: 11,
-              }}
-            >
-              <div style={{ color: "var(--text-dim)", fontVariantNumeric: "tabular-nums" }}>
-                {formatTime(e.at)}
+          {ordered.map((e, i) => {
+            const validationFailure = validationFailureDetails(e, nodes);
+            return (
+              <div
+                key={`${e.at}-${e.type}-${i}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "64px 1fr",
+                  gap: 8,
+                  padding: "7px 0",
+                  borderBottom: "1px solid var(--border)",
+                  fontSize: 11,
+                }}
+              >
+                <div style={{ color: "var(--text-dim)", fontVariantNumeric: "tabular-nums" }}>
+                  {formatTime(e.at)}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: eventColor(e.type), fontWeight: 600 }}>{e.type}</div>
+                  {validationFailure ? (
+                    <div
+                      style={{
+                        marginTop: 5,
+                        padding: "8px 9px",
+                        borderRadius: 7,
+                        border: "1px solid rgba(239,68,68,0.35)",
+                        background: "rgba(239,68,68,0.08)",
+                      }}
+                    >
+                      <div style={{ color: "#ef4444", fontWeight: 600 }}>Hard validation failed</div>
+                      <ul style={{ margin: "5px 0 0", paddingLeft: 17, color: "var(--text-muted)" }}>
+                        {validationFailure.hardErrors.map((error, errorIndex) => (
+                          <li key={`${error}-${errorIndex}`} style={{ marginBottom: 3 }}>{error}</li>
+                        ))}
+                      </ul>
+                      {validationFailure.artifactPaths.map((path) => (
+                        <div key={path} style={{ marginTop: 5, wordBreak: "break-all", color: "var(--text-dim)" }}>
+                          {path}
+                          {onOpenFile && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenFile(path)}
+                              style={openFileButtonStyle}
+                            >
+                              Open file
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : e.message ? (
+                    <div style={{ color: "var(--text-muted)", marginTop: 2, whiteSpace: "pre-wrap" }}>
+                      {e.message}
+                    </div>
+                  ) : null}
+                  {(e.nodeId || e.dispatchId) && (
+                    <div style={{ color: "var(--text-dim)", marginTop: 2 }}>
+                      {e.nodeId ? `node ${e.nodeId}` : ""}
+                      {e.nodeId && e.dispatchId ? " · " : ""}
+                      {e.dispatchId ? `dispatch ${e.dispatchId.slice(0, 8)}` : ""}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <div style={{ color: eventColor(e.type), fontWeight: 600 }}>{e.type}</div>
-                {e.message && (
-                  <div style={{ color: "var(--text-muted)", marginTop: 2, whiteSpace: "pre-wrap" }}>
-                    {e.message}
-                  </div>
-                )}
-                {(e.nodeId || e.dispatchId) && (
-                  <div style={{ color: "var(--text-dim)", marginTop: 2 }}>
-                    {e.nodeId ? `node ${e.nodeId}` : ""}
-                    {e.nodeId && e.dispatchId ? " · " : ""}
-                    {e.dispatchId ? `dispatch ${e.dispatchId.slice(0, 8)}` : ""}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
+const openFileButtonStyle: React.CSSProperties = {
+  marginLeft: 6,
+  border: "none",
+  background: "transparent",
+  color: "var(--accent)",
+  cursor: "pointer",
+  fontSize: 10,
+  padding: 0,
+};
 
 function formatTime(iso: string): string {
   try {

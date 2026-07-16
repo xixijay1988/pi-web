@@ -454,6 +454,11 @@ export class TeamRunEngine {
       nodeId: node.id,
       dispatchId,
       message: validation.hardErrors.join("; "),
+      data: {
+        hardErrors: validation.hardErrors,
+        softWarnings: validation.softWarnings,
+        paths: latestNode.artifactPaths,
+      },
     });
     return await this.failNode(working, node.id, dispatchId, validation.hardErrors.join("; "));
   }

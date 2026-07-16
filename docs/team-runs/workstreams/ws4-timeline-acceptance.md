@@ -42,3 +42,5 @@ a final acceptance panel humans can actually use.
 ## Implementation status
 
 **Landed:** `hooks/useTeamRun.ts` (SSE), `TeamTimeline`, `TeamAcceptancePanel`, TeamMode redesign with budgets, blocked reason, observe/pause guidance, artifact open via file panel.
+
+**Q3 hardening landed:** structured validation errors and paths on events; dedicated Timeline failure cards; latest unresolved validation reason/node/artifacts pinned in the run header with Open file actions.
