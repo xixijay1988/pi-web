@@ -466,13 +466,26 @@ export function TeamMode({
               </div>
 
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 10 }}>
-                Observe role sessions anytime. Sending chat to a role while auto-running can race the engine — pause first (prompted when opening a session).
+                {run.status === "awaiting_human_acceptance"
+                  ? "验收阶段：主区域已放大。请按「如何运行」打开成果，对照检查项后再 Accept / Rework。"
+                  : "Observe role sessions anytime. Sending chat to a role while auto-running can race the engine — pause first (prompted when opening a session)."}
               </div>
             </div>
 
             <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-              <div style={{ flex: 1, overflow: "auto", padding: 14, borderRight: "1px solid var(--border)" }}>
-                {(run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked") && (
+              <div
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                  padding:
+                    run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked"
+                      ? 16
+                      : 14,
+                  borderRight: "1px solid var(--border)",
+                  minWidth: 0,
+                }}
+              >
+                                {(run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked") && (
                   <TeamAcceptancePanel
                     run={run}
                     busy={busy}
@@ -482,7 +495,13 @@ export function TeamMode({
                   />
                 )}
 
-                <Section title="Plan nodes">
+                {(run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked") ? (
+                  <details style={{ marginTop: 4, marginBottom: 12 }}>
+                    <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--text-muted)", userSelect: "none" }}>
+                      Plan nodes & role sessions（验收时默认折叠，点击展开）
+                    </summary>
+                    <div style={{ marginTop: 10 }}>
+                      <Section title="Plan nodes">
                   {run.plan.nodes.map((n) => {
                     const role = run.roleSnapshots.find((r) => r.roleId === n.roleId);
                     const active = n.status === "running" || n.status === "starting" || n.status === "validating";
@@ -563,9 +582,110 @@ export function TeamMode({
                     </div>
                   ))}
                 </Section>
+                    </div>
+                  </details>
+                ) : (
+                  <>
+                    <Section title="Plan nodes">
+                  {run.plan.nodes.map((n) => {
+                    const role = run.roleSnapshots.find((r) => r.roleId === n.roleId);
+                    const active = n.status === "running" || n.status === "starting" || n.status === "validating";
+                    return (
+                      <div
+                        key={n.id}
+                        style={{
+                          padding: "8px 10px",
+                          border: active ? "1px solid color-mix(in srgb, #f59e0b 50%, var(--border))" : "1px solid var(--border)",
+                          borderRadius: 8,
+                          marginBottom: 8,
+                          background: active ? "color-mix(in srgb, #f59e0b 8%, var(--bg-panel))" : "var(--bg-panel)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 500 }}>
+                            {role?.name ?? n.roleId} · {n.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: statusColor(n.status) }}>{n.status}</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
+                          {role?.provider && role?.modelId
+                            ? `${role.provider}/${role.modelId}`
+                            : "model not set"}
+                          {n.sessionId ? ` · session ${n.sessionId.slice(0, 8)}` : " · no session yet"}
+                          {` · attempts ${n.attempts}`}
+                        </div>
+                        {n.lastError && (
+                          <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>{n.lastError}</div>
+                        )}
+                        {n.artifactPaths?.[0] && (
+                          <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                            {shortenPath(n.artifactPaths[n.artifactPaths.length - 1])}
+                            {onOpenFile && (
+                              <button
+                                onClick={() => onOpenFile(n.artifactPaths[n.artifactPaths.length - 1], getFileName(n.artifactPaths[n.artifactPaths.length - 1]))}
+                                style={{
+                                  marginLeft: 8,
+                                  border: "none",
+                                  background: "transparent",
+                                  color: "var(--accent)",
+                                  cursor: "pointer",
+                                  fontSize: 10,
+                                }}
+                              >
+                                open
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {n.sessionId && onOpenSession && (
+                          <button
+                            onClick={() => void openRoleSession(n.sessionId!)}
+                            style={{
+                              marginTop: 6,
+                              fontSize: 11,
+                              border: "1px solid var(--border)",
+                              background: "transparent",
+                              color: "var(--accent)",
+                              borderRadius: 4,
+                              padding: "3px 8px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Open role session
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </Section>
+
+                <Section title="Role snapshots">
+                  {run.roleSnapshots.map((r) => (
+                    <div key={r.roleId} style={{ fontSize: 12, marginBottom: 6, color: "var(--text-muted)" }}>
+                      <strong style={{ color: "var(--text)" }}>{r.name}</strong> ({r.roleId}) · {r.toolPreset}
+                      {r.provider ? ` · ${r.provider}/${r.modelId}` : ""}
+                    </div>
+                  ))}
+                </Section>
+                  </>
+                )}
+
               </div>
 
-              <div style={{ width: 340, overflow: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 14 }}>
+              <div
+                style={{
+                  width:
+                    run.status === "awaiting_human_acceptance" || run.status === "done" || run.status === "blocked"
+                      ? 250
+                      : 340,
+                  flexShrink: 0,
+                  overflow: "auto",
+                  padding: 14,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                }}
+              >
                 <TeamTimeline
                   events={run.events}
                   status={run.status}
