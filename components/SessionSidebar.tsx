@@ -719,11 +719,11 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     && !showWorktreeSwitcher
     ? (worktreeState.isGit
         ? {
-            label: "Open repo root",
+            label: t("session.openRepoRoot"),
             title: "Open the repository root to manage worktrees.",
           }
         : {
-            label: "Git repo root only",
+            label: t("session.gitRootOnly"),
             title: "Worktrees are available in Git repository roots.",
           })
     : null;
@@ -1123,7 +1123,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
             <div ref={wtDropdownRef} style={{ position: "relative", marginTop: 6 }}>
               <button
                 onClick={() => setWtDropdownOpen((v) => !v)}
-                title={currentWt ? `Switch worktree: ${currentWt.path}` : "Switch worktree"}
+                title={currentWt ? t("session.switchWorktreePath", { path: currentWt.path }) : t("session.switchWorktree")}
                 style={{
                   width: "100%",
                   height: 29,
@@ -1353,7 +1353,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
                             opacity: wtBusy || !wtNewBranch.trim() ? 0.65 : 1,
                           }}
                         >
-                          {wtBusy ? "Creating…" : "Create"}
+                          {wtBusy ? t("session.creating") : t("session.create")}
                         </button>
                         <button
                           onClick={() => { setWtNewOpen(false); setWtNewBranch(""); setWtError(null); }}
@@ -1624,10 +1624,11 @@ function SessionTreeItem({
 }
 
 function RunningSessionIndicator() {
+  const { t } = useI18n();
   return (
     <span
-      title="Agent running…"
-      aria-label="Agent running"
+      title={t("session.agentRunning")}
+      aria-label={t("session.agentRunning")}
       style={{
         width: 14,
         height: 14,
@@ -1661,10 +1662,11 @@ function RunningSessionIndicator() {
 }
 
 function UnreadSessionIndicator() {
+  const { t } = useI18n();
   return (
     <span
-      title="New activity"
-      aria-label="New session activity"
+      title={t("session.newActivity")}
+      aria-label={t("session.newSessionActivity")}
       style={{
         width: 14,
         height: 14,
@@ -1711,6 +1713,7 @@ function SessionItem({
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }) {
+  const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -1912,7 +1915,7 @@ function SessionItem({
           {hasChildren && (
             <button
               onClick={(e) => { e.stopPropagation(); onToggleCollapse?.(); }}
-              title={collapsed ? "Expand forks" : "Collapse forks"}
+              title={collapsed ? t("session.expandForks") : t("session.collapseForks")}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 width: 20, height: 20, padding: 0, flexShrink: 0,
@@ -1933,7 +1936,7 @@ function SessionItem({
             <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
               <button
                 onClick={startRename}
-                title="Rename"
+                title={t("session.rename")}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
                   width: 32, height: 32, padding: 0,
@@ -1959,7 +1962,7 @@ function SessionItem({
               </button>
               <button
                 onClick={handleDeleteClick}
-                title="Delete"
+                title={t("session.delete")}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
                   width: 32, height: 32, padding: 0,

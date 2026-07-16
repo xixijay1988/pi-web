@@ -659,8 +659,8 @@ export function AppShell() {
               <button
                 onClick={handleExportSession}
                 disabled={!selectedSession}
-                title={selectedSession ? "Export HTML" : "Export is available after the session is saved"}
-                aria-label="Export HTML"
+                title={selectedSession ? t("app.exportHtml") : t("app.exportUnavailable")}
+                aria-label={t("app.exportHtml")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -706,7 +706,7 @@ export function AppShell() {
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </span>
-                {!isMobile && <span>Export</span>}
+                {!isMobile && <span>{t("app.export")}</span>}
               </button>
               <BranchNavigator
                 tree={branchTree}
@@ -722,8 +722,8 @@ export function AppShell() {
               <button
                 ref={systemBtnRef}
                 onClick={() => toggleTopPanel("system")}
-                title="System prompt"
-                aria-label="System prompt"
+                title={t("app.systemPrompt")}
+                aria-label={t("app.systemPrompt")}
                 aria-pressed={activeTopPanel === "system"}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
@@ -745,7 +745,7 @@ export function AppShell() {
                   <line x1="8" y1="13" x2="16" y2="13" />
                   <line x1="8" y1="17" x2="13" y2="17" />
                 </svg>
-                {!isMobile && <span>System</span>}
+                {!isMobile && <span>{t("app.system")}</span>}
               </button>
             </div>
           )}
@@ -1086,10 +1086,10 @@ export function AppShell() {
                   <line x1="20" y1="12" x2="4" y2="12" /><polyline points="10 6 4 12 10 18" />
                 </svg>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>Get Started</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>{t("app.getStarted")}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
-                    <span style={{ color: "var(--text-dim)", marginRight: 6 }}>1.</span>Select a project directory from the sidebar<br />
-                    <span style={{ color: "var(--text-dim)", marginRight: 6 }}>2.</span>Add models via the <strong style={{ color: "var(--text)" }}>Models</strong> button at the bottom
+                    <span style={{ color: "var(--text-dim)", marginRight: 6 }}>1.</span>{t("app.getStartedProject")}<br />
+                    <span style={{ color: "var(--text-dim)", marginRight: 6 }}>2.</span>{t("app.getStartedModels")}
                   </div>
                 </div>
               </div>
@@ -1140,8 +1140,8 @@ export function AppShell() {
     {/* File panel toggle — always visible at top-right */}
     <button
       onClick={() => setRightPanelOpen((v) => !v)}
-      title={rightPanelOpen ? "Hide file panel" : "Show file panel"}
-      aria-label={rightPanelOpen ? "Hide file panel" : "Show file panel"}
+      title={rightPanelOpen ? t("app.hideFilePanel") : t("app.showFilePanel")}
+      aria-label={rightPanelOpen ? t("app.hideFilePanel") : t("app.showFilePanel")}
       style={{
         position: "fixed", top: 0, right: 0, zIndex: 300,
         display: "flex", alignItems: "center", justifyContent: "center",
