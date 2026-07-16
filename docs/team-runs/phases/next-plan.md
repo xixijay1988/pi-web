@@ -40,7 +40,7 @@ Do not expand into peer channels or parallel execution unless explicitly request
 
 ---
 
-### Q2 — False-green regression fixtures (high value, medium size)
+### Q2 — False-green regression fixtures (high value, medium size) — **DONE**
 
 **Problem:** validators are string heuristics; the original Todo failure mode (HTTP green / file:// red) is not encoded as an automated scenario.
 
@@ -51,6 +51,8 @@ Do not expand into peer channels or parallel execution unless explicitly request
 4. Optional: prompt snippet library for tester/reviewer from fixtures  
 
 **Done when:** a green-looking test-report without primary pass cannot validate; acceptance without independent evidence cannot pass.
+
+**Landed:** Todo fixture pairs under `lib/team-runs/fixtures/false-green/`; validators require a dedicated Primary Path pass field and independent reviewer evidence; contracts include canonical tester/reviewer shapes; unit tests cover weak and valid artifact sets.
 
 ---
 
@@ -131,6 +133,6 @@ From [`../alignment-room.md`](../alignment-room.md):
 
 ```text
 Continue quality-first Team Runs from docs/team-runs/HANDOFF.md and docs/team-runs/phases/next-plan.md.
-Implement Q1 (structured rework → .team/notes.md + brief), with tests and contracts update.
-Do not expand Alignment P2 unless Q1 is done.
+Implement Q3 (surface hard validation failures prominently in Team Timeline/run header), with focused UI validation.
+Do not expand Alignment P2 until Q3 is done.
 ```

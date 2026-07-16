@@ -1,10 +1,10 @@
 # Handoff: pi-web Team Runs (quality-first continuation)
 
-**Date:** 2026-07-15  
+**Date:** 2026-07-16
 **Repo:** `/Users/dawn/code/agent/pi-web`  
 **Branch:** `dev` (track `origin/dev`; tip at handoff finalize: run `git rev-parse --short HEAD`)  
 **Remote:** `git@github.com:xixijay1988/pi-web.git`  
-**Next session focus:** **Q2 false-green fixtures** (then Q3 timeline validation errors). Q1 structured rework is shipped.
+**Next session focus:** **Q3 timeline validation errors**. Q1 structured rework and Q2 false-green fixtures are shipped.
 
 ---
 
@@ -49,7 +49,9 @@ Highlights:
 - Strong create: Outcome + Primary Path + ≥3 checks  
 - `.team/goal-spec.md` + `TeamRun.goalSpec`  
 - Hard validators (contract / change-summary / test-report / acceptance)  
-- Brief injects Goal Spec + **human rework notes**  
+- Dedicated `primary: pass` required; reviewer must state independent verification
+- Todo false-green fixtures cover HTTP-only evidence and reviewer hearsay
+- Brief injects Goal Spec + structured **human rework notes**
 - Acceptance UI Goal Spec checklist; failed checks feed rework  
 
 ### Alignment / Chat import
@@ -116,10 +118,9 @@ Dev: `npm run dev` port **30141**.
 
 See `docs/team-runs/phases/next-plan.md`. Top queue:
 
-1. Rework → persist failed checks into `.team/notes.md` + structured note type  
-2. Engine integration fixture for false-green (file:// vs HTTP)  
-3. Timeline surfaces hard validation errors clearly  
-4. Only then Alignment P2 (streaming, multi-seat full-screen, history)  
+1. Timeline surfaces hard validation errors clearly
+2. Acceptance checklist persistence across refresh
+3. Only then Alignment P2 (streaming, multi-seat full-screen, history)
 
 ---
 

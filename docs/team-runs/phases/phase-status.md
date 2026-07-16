@@ -1,4 +1,4 @@
-# Team Runs — Phase status (as of 2026-07-15)
+# Team Runs — Phase status (as of 2026-07-16)
 
 Companion: [`../README.md`](../README.md) · backlog: [`next-plan.md`](./next-plan.md) · handoff: [`../HANDOFF.md`](../HANDOFF.md)
 
@@ -15,6 +15,7 @@ This document is the **stage report** for humans and successor agents. It record
 | Chat → Publish to Team | **Shipped** | extract `goal_spec` + confirm modal |
 | Quality gates / anti false-green | **Shipped (v1)** | validators + brief rework + acceptance checklist |
 | Q1 Structured rework | **Shipped** | `lastRework` + `.team/notes.md` + brief FAIL checks |
+| Q2 False-green fixtures | **Shipped** | Todo HTTP-only red fixture + verified green fixture |
 | Alignment P2 polish | **Pending** | streaming, history, multi-seat full-screen |
 | Execution peer channels | **Deferred** | ADR 0007 / ADR 0002 |
 
@@ -89,8 +90,9 @@ Design: [`../alignment-room.md`](../alignment-room.md) · ADR 0007.
 Hard validation:
 - `contract.md`: Primary Path + Acceptance; path not TBD/too short  
 - `change-summary.md`: must include how-to-open / Primary Path section (**hard**)  
-- `test-report.md`: environments + status; pass requires explicit primary pass  
-- `acceptance.md`: pass requires `primary_path_verified: true` + body evidence  
+- `test-report.md`: environments + status; pass requires dedicated `primary: pass` evidence
+- `acceptance.md`: pass requires `primary_path_verified: true` + independent body evidence
+- **Q2:** Todo regression fixtures reject HTTP-only testing and reviewer hearsay
 
 Dispatch:
 - Goal Spec acceptance checks in brief  
@@ -106,7 +108,7 @@ Human acceptance UI:
 ### Residual risks
 - Heuristic validators can still be gamed by models writing compliant but untrue text  
 - No automated browser dual-path E2E in engine  
-- Rework does not yet write a structured notes file beyond humanNotes JSON  
+- Fixtures verify Markdown gates, not the underlying browser behavior
 
 ---
 

@@ -44,7 +44,7 @@ export function validateArtifactFile(filePath: string): ValidationResult {
         hardErrors.push("acceptance.md pass must describe primary-path verification evidence in the body");
       }
       if (!/(independen|myself|re-?check|亲自|独立|复核|未仅信任)/i.test(content)) {
-        softWarnings.push("acceptance.md should state independent primary-path verification (not only tester report)");
+        hardErrors.push("acceptance.md pass must state independent primary-path verification (not only tester report)");
       }
     }
   }
@@ -82,7 +82,6 @@ export function validateArtifactFile(filePath: string): ValidationResult {
     if (/(?:^|\n)\s*status\s*:\s*pass\s*(?:\n|$)/i.test(content)) {
       const hasPrimaryPass =
         /primary(?:\s*path)?\s*[:=]\s*pass/i.test(content) ||
-        /primary(?:\s*path)?[^\n]{0,40}\bpass\b/i.test(content) ||
         /主路径[^\n]{0,20}(通过|pass)/i.test(content);
       if (!hasPrimaryPass) {
         hardErrors.push(

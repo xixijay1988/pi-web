@@ -246,7 +246,21 @@ Strong validation failure → HTTP 400 with `{ error, errors[], warnings[] }`.
 - YAML frontmatter or leading field: `status: pass` or `status: fail`.
 - Node succeeds for pipeline completion only when `status: pass`.
 - When `status: pass`, must also include `primary_path_verified: true` (reviewer independently verified the human Primary Path).
-- Pass body should describe primary-path verification evidence.
+- Pass body must explicitly state an independent/self re-check and describe observed Primary Path evidence. Repeating or trusting only `test-report.md` is a hard failure.
+
+Canonical pass shape:
+
+```markdown
+---
+status: pass
+primary_path_verified: true
+---
+
+# Acceptance
+
+I independently opened `index.html` via `file://`, added an item, refreshed,
+and confirmed persistence without relying only on the tester report.
+```
 
 - `status: fail` → node failed (triggers retry/replan policy), not human acceptance.
 
@@ -260,7 +274,27 @@ Strong validation failure → HTTP 400 with `{ error, errors[], warnings[] }`.
 - Must include `status: pass` or `status: fail`.
 - `status: fail` fails the node.
 - If text indicates the primary path failed/blocked, hard-fail even if overall wording looks positive.
-- When overall `status: pass`, must explicitly mark primary path pass (e.g. `primary: pass`).
+- When overall `status: pass`, must include a dedicated explicit field such as `primary: pass` or `primary path: pass`. A nearby generic `HTTP pass` does not count.
+
+Canonical pass shape:
+
+```markdown
+status: pass
+
+# Test report
+
+## Environments
+
+- primary: pass
+- Primary Path: opened `index.html` directly via `file://` in Chrome.
+- secondary: pass via `http://localhost:4173`.
+
+## Evidence
+
+Added an item, toggled it, refreshed, and confirmed persistence on the Primary Path.
+```
+
+Regression fixtures live under `lib/team-runs/fixtures/false-green/` and encode the original Todo HTTP-green / `file://`-unverified failure mode.
 
 
 ### `change-summary.md`
