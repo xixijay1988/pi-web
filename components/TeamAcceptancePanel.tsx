@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import type { PlanNode, TeamRun } from "@/lib/team-runs/types";
+import { MarkdownBody } from "./MarkdownBody";
 
 type ArtifactCard = {
   key: string;
@@ -14,6 +15,15 @@ type ArtifactCard = {
 };
 
 type CheckState = "unchecked" | "pass" | "fail";
+
+type EvidenceSummary = {
+  changed: string[];
+  testStatus?: "pass" | "fail" | "unknown";
+  testBlurb?: string;
+  reviewStatus?: "pass" | "fail" | "unknown";
+  reviewBlurb?: string;
+  primaryVerified?: boolean;
+};
 
 export function TeamAcceptancePanel({
   run,
@@ -31,7 +41,8 @@ export function TeamAcceptancePanel({
   const [cards, setCards] = useState<ArtifactCard[]>([]);
   const [feedback, setFeedback] = useState("");
   const [checkState, setCheckState] = useState<Record<string, CheckState>>({});
-  const [activeKey, setActiveKey] = useState<string>("change");
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [showEvidenceDrawer, setShowEvidenceDrawer] = useState(false);
   const ready = run.status === "awaiting_human_acceptance";
   const canRework = ready || run.status === "blocked";
   const teamRoot = run.cwd.replace(/\/$/, "");
@@ -58,22 +69,16 @@ export function TeamAcceptancePanel({
 
   useEffect(() => {
     setCheckState({});
+    setExpandedKey(null);
+    setShowEvidenceDrawer(false);
   }, [run.id, run.goal, run.goalSpec?.primaryPath]);
 
   useEffect(() => {
     let cancelled = false;
     const specs: Array<{ key: string; title: string; path?: string }> = [
-      {
-        key: "goal",
-        title: "Goal Spec",
-        path: `${teamRoot}/.team/goal-spec.md`,
-      },
+      { key: "goal", title: "Goal Spec", path: `${teamRoot}/.team/goal-spec.md` },
       { key: "goal_fallback", title: "Goal", path: `${teamRoot}/.team/goal.md` },
-      {
-        key: "readme",
-        title: "README",
-        path: `${teamRoot}/README.md`,
-      },
+      { key: "readme", title: "README", path: `${teamRoot}/README.md` },
       {
         key: "contract",
         title: "Contract",
@@ -136,15 +141,7 @@ export function TeamAcceptancePanel({
           });
         }
       }
-      if (!cancelled) {
-        setCards(next);
-        const prefer =
-          next.find((c) => c.key === "change" && c.body)?.key ||
-          next.find((c) => c.key === "readme" && c.body)?.key ||
-          next.find((c) => c.body)?.key ||
-          "change";
-        setActiveKey(prefer);
-      }
+      if (!cancelled) setCards(next);
     })();
 
     return () => {
@@ -152,19 +149,51 @@ export function TeamAcceptancePanel({
     };
   }, [run, teamRoot]);
 
-  const changeBody = cards.find((c) => c.key === "change")?.body ?? "";
-  const readmeBody = cards.find((c) => c.key === "readme")?.body ?? "";
+  const byKey = useMemo(() => {
+    const m = new Map<string, ArtifactCard>();
+    for (const c of cards) m.set(c.key, c);
+    return m;
+  }, [cards]);
+
+  const changeBody = byKey.get("change")?.body ?? "";
+  const readmeBody = byKey.get("readme")?.body ?? "";
+  const testBody = byKey.get("test")?.body ?? "";
+  const reviewBody = byKey.get("acceptance")?.body ?? "";
+
   const howToRun = useMemo(
-    () => extractHowToRun({
-      primaryPath: run.goalSpec?.primaryPath,
-      changeSummary: changeBody,
-      readme: readmeBody,
-      cwd: teamRoot,
-    }),
+    () =>
+      extractHowToRun({
+        primaryPath: run.goalSpec?.primaryPath,
+        changeSummary: changeBody,
+        readme: readmeBody,
+        cwd: teamRoot,
+      }),
     [run.goalSpec?.primaryPath, changeBody, readmeBody, teamRoot],
   );
 
-  const active = cards.find((c) => c.key === activeKey) ?? cards[0];
+  const evidence = useMemo(
+    () =>
+      buildEvidenceSummary({
+        changeSummary: changeBody,
+        testReport: testBody,
+        reviewVerdict: reviewBody,
+      }),
+    [changeBody, testBody, reviewBody],
+  );
+
+  const reportLinks = useMemo(
+    () =>
+      [
+        byKey.get("change"),
+        byKey.get("test"),
+        byKey.get("acceptance"),
+        byKey.get("readme"),
+        byKey.get("goal") ?? byKey.get("goal_fallback"),
+        byKey.get("contract"),
+      ].filter((c): c is ArtifactCard => Boolean(c && !c.missing && c.body)),
+    [byKey],
+  );
+
   const failedChecks = checks.filter((c) => checkState[c.id] === "fail");
   const allCheckedPass =
     checks.length > 0 && checks.every((c) => checkState[c.id] === "pass");
@@ -192,6 +221,8 @@ export function TeamAcceptancePanel({
     if (path && onOpenFile) onOpenFile(path);
   };
 
+  const expanded = expandedKey ? byKey.get(expandedKey) : undefined;
+
   return (
     <div
       style={{
@@ -204,19 +235,23 @@ export function TeamAcceptancePanel({
           ? "color-mix(in srgb, var(--accent) 5%, var(--bg-panel))"
           : "var(--bg-panel)",
         marginBottom: 14,
-        minHeight: ready ? 520 : undefined,
       }}
     >
-      {/* Header */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-start", marginBottom: 14 }}>
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
-            {ready ? "等待你的验收" : run.status === "done" ? "已验收完成" : run.status === "blocked" ? "阻塞 — 可返工" : `验收 · ${run.status}`}
+            {ready
+              ? "等待你的验收"
+              : run.status === "done"
+                ? "已验收完成"
+                : run.status === "blocked"
+                  ? "阻塞 — 可返工"
+                  : `验收 · ${run.status}`}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
             {ready
-              ? "Reviewer 已通过。请按下方「如何运行」亲自打开成果，勾选检查项后再 Accept 或 Rework。"
-              : "查看产物与检查项；需要改进时填写反馈并 Rework。"}
+              ? "先按步骤打开成果，再勾选检查项。Agent 报告默认折叠，只在需要时查看。"
+              : "主路径仍是运行与检查；完整报告按需展开。"}
           </div>
         </div>
         <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "right" }}>
@@ -225,27 +260,23 @@ export function TeamAcceptancePanel({
         </div>
       </div>
 
-      {/* How to run — primary guidance */}
+      {/* 1. How to run */}
       <section style={sectionBox}>
         <div style={sectionTitle}>1. 如何打开 / 运行成果</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.45 }}>
-          请在本机终端进入工作目录后操作。不要只看 Agent 报告 — 以你浏览器里的实际结果为准。
+          在本机终端操作；以你浏览器里的实际结果为准，不要只信 Agent 报告。
         </div>
         {howToRun.lines.length > 0 ? (
           <ol style={{ margin: "0 0 10px", paddingLeft: 20, fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>
             {howToRun.lines.map((line, i) => (
               <li key={i} style={{ marginBottom: 4 }}>
-                {looksLikeCommand(line) ? (
-                  <code style={codeInline}>{line}</code>
-                ) : (
-                  line
-                )}
+                {looksLikeCommand(line) ? <code style={codeInline}>{stripCodeTicks(line)}</code> : line}
               </li>
             ))}
           </ol>
         ) : (
           <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>
-            未从 change-summary / Goal Spec 解析到运行步骤。请打开 Change summary 或 README。
+            未解析到运行步骤。可打开 README 或 Change summary。
           </div>
         )}
         {howToRun.warnings.length > 0 && (
@@ -257,13 +288,7 @@ export function TeamAcceptancePanel({
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {howToRun.urls.map((url) => (
-            <a
-              key={url}
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              style={linkBtn}
-            >
+            <a key={url} href={url} target="_blank" rel="noreferrer" style={linkBtn}>
               打开 {url}
             </a>
           ))}
@@ -275,8 +300,8 @@ export function TeamAcceptancePanel({
               <button
                 type="button"
                 style={secondaryBtn}
-                onClick={() => openPath(cards.find((c) => c.key === "change")?.path)}
-                disabled={!cards.find((c) => c.key === "change")?.path}
+                onClick={() => openPath(byKey.get("change")?.path)}
+                disabled={!byKey.get("change")?.path}
               >
                 打开 Change summary
               </button>
@@ -288,20 +313,22 @@ export function TeamAcceptancePanel({
         </div>
         {run.goalSpec?.primaryPath && (
           <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.45 }}>
-            <span style={{ color: "var(--text-muted)" }}>Primary Path（Goal Spec）：</span>
-            <div style={{ whiteSpace: "pre-wrap", color: "var(--text)", marginTop: 4 }}>{run.goalSpec.primaryPath}</div>
+            <span style={{ color: "var(--text-muted)" }}>Primary Path：</span>
+            <div style={{ whiteSpace: "pre-wrap", color: "var(--text)", marginTop: 4 }}>
+              {run.goalSpec.primaryPath}
+            </div>
           </div>
         )}
       </section>
 
-      {/* Checklist */}
+      {/* 2. Checklist */}
       <section style={sectionBox}>
         <div style={sectionTitle}>2. 按 Goal Spec 逐项验收</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
           点击切换：未检 → 通过 → 失败。建议全部通过后再 Accept。
         </div>
         {checks.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无结构化检查项 — 请阅读 Goal Spec 后自行判断。</div>
+          <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无结构化检查项 — 请结合 Goal Spec 自行判断。</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {checks.map((c) => {
@@ -349,102 +376,166 @@ export function TeamAcceptancePanel({
         )}
       </section>
 
-      {/* Artifacts browser — large */}
-      <section style={{ ...sectionBox, padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "12px 14px 0" }}>
-          <div style={sectionTitle}>3. 成果物与报告（在这里查看细节）</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.45 }}>
-            左侧选文档；右侧阅读全文。点「在文件面板打开」可放大对照代码。
-          </div>
+      {/* 3. Compact evidence — Plan A */}
+      <section style={sectionBox}>
+        <div style={sectionTitle}>3. 验收辅助（摘要，不是必读全文）</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.45 }}>
+          这些信息帮助你决定，但不能替代你亲自打开成果。完整 Agent 报告默认折叠。
         </div>
+
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(140px, 200px) 1fr",
-            minHeight: 280,
-            borderTop: "1px solid var(--border)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 8,
+            marginBottom: 10,
           }}
         >
-          <div style={{ borderRight: "1px solid var(--border)", overflow: "auto", background: "var(--bg)" }}>
-            {cards.map((c) => {
-              const selected = c.key === (active?.key ?? activeKey);
-              return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => setActiveKey(c.key)}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "10px 12px",
-                    border: "none",
-                    borderBottom: "1px solid var(--border)",
-                    background: selected ? "var(--bg-selected)" : "transparent",
-                    color: c.missing ? "var(--text-dim)" : "var(--text)",
-                    cursor: "pointer",
-                    fontSize: 12,
-                  }}
-                >
-                  <div style={{ fontWeight: selected ? 650 : 500 }}>{c.title}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 2 }}>
-                    {c.missing ? "缺失" : c.body ? `${c.body.length} chars` : "—"}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 280 }}>
+          <SummaryCard
+            title="改动要点"
+            tone="neutral"
+            body={
+              evidence.changed.length
+                ? evidence.changed.map((x) => `• ${x}`).join("\n")
+                : "暂无摘要 — 需要时可展开 Change summary"
+            }
+          />
+          <SummaryCard
+            title="测试结论"
+            tone={evidence.testStatus === "pass" ? "good" : evidence.testStatus === "fail" ? "bad" : "neutral"}
+            body={
+              [
+                evidence.testStatus ? `status: ${evidence.testStatus}` : "status: 未知",
+                evidence.testBlurb,
+              ]
+                .filter(Boolean)
+                .join("\n")
+            }
+          />
+          <SummaryCard
+            title="Reviewer 结论"
+            tone={
+              evidence.reviewStatus === "pass" ? "good" : evidence.reviewStatus === "fail" ? "bad" : "neutral"
+            }
+            body={
+              [
+                evidence.reviewStatus ? `status: ${evidence.reviewStatus}` : "status: 未知",
+                evidence.primaryVerified === true
+                  ? "primary_path_verified: true"
+                  : evidence.primaryVerified === false
+                    ? "primary_path_verified: 未确认"
+                    : undefined,
+                evidence.reviewBlurb,
+              ]
+                .filter(Boolean)
+                .join("\n")
+            }
+          />
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+          {reportLinks.slice(0, 4).map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              style={secondaryBtn}
+              onClick={() => {
+                setShowEvidenceDrawer(true);
+                setExpandedKey(c.key);
+              }}
+            >
+              查看 {c.title}
+            </button>
+          ))}
+          {onOpenFile && byKey.get("change")?.path && (
+            <button type="button" style={linkBtn} onClick={() => openPath(byKey.get("change")?.path)}>
+              文件面板打开 Change summary
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowEvidenceDrawer((v) => !v)}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "var(--text-muted)",
+            fontSize: 12,
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          {showEvidenceDrawer ? "收起完整报告 ▾" : "展开完整 Agent 报告（Markdown 渲染） ▸"}
+        </button>
+
+        {showEvidenceDrawer && (
+          <div
+            style={{
+              marginTop: 10,
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              overflow: "hidden",
+              background: "var(--bg)",
+            }}
+          >
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
+                flexWrap: "wrap",
+                gap: 6,
+                padding: 8,
                 borderBottom: "1px solid var(--border)",
                 background: "var(--bg-panel)",
               }}
             >
-              <div style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{active?.title ?? "—"}</div>
-              {active?.path && (
-                <span style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>
-                  {shorten(active.path)}
-                </span>
-              )}
-              {active?.path && onOpenFile && !active.missing && (
-                <button type="button" style={linkBtn} onClick={() => openPath(active.path)}>
+              {reportLinks.map((c) => {
+                const on = expandedKey === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setExpandedKey(c.key)}
+                    style={{
+                      padding: "5px 10px",
+                      borderRadius: 999,
+                      border: "1px solid var(--border)",
+                      background: on ? "var(--accent)" : "transparent",
+                      color: on ? "#fff" : "var(--text-muted)",
+                      fontSize: 11,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {c.title}
+                  </button>
+                );
+              })}
+              {expanded?.path && onOpenFile && (
+                <button type="button" style={{ ...linkBtn, marginLeft: "auto" }} onClick={() => openPath(expanded.path)}>
                   在文件面板打开
                 </button>
               )}
             </div>
-            <div style={{ flex: 1, overflow: "auto", padding: 12, background: "var(--bg)" }}>
-              {active?.missing ? (
-                <div style={{ fontSize: 12, color: "#ef4444" }}>
-                  {active.error || "文件缺失或无法读取"}
+            <div style={{ maxHeight: 360, overflow: "auto", padding: 12 }}>
+              {!expanded ? (
+                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>选择上方报告查看渲染内容。</div>
+              ) : expanded.missing ? (
+                <div style={{ fontSize: 12, color: "#ef4444" }}>{expanded.error || "文件缺失"}</div>
+              ) : expanded.body ? (
+                <div className="team-acceptance-md" style={{ fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>
+                  <MarkdownBody cwd={teamRoot} onOpenFile={onOpenFile}>
+                    {expanded.body}
+                  </MarkdownBody>
                 </div>
-              ) : active?.body ? (
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--text)",
-                  }}
-                >
-                  {active.body}
-                </pre>
               ) : (
-                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>加载中或无内容</div>
+                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>无内容</div>
               )}
             </div>
           </div>
-        </div>
+        )}
       </section>
 
-      {/* Decision */}
+      {/* 4. Decision */}
       <section style={sectionBox}>
         <div style={sectionTitle}>4. 你的决定</div>
         {ready && anyUnchecked && checks.length > 0 && (
@@ -518,11 +609,113 @@ export function TeamAcceptancePanel({
           </button>
         </div>
         <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 8, lineHeight: 1.4 }}>
-          Rework 会把你的反馈注入后续 implement → test → review 的 brief。Accept 将 Team Run 标为 done。
+          Rework 会把反馈注入后续 implement → test → review。Accept 将 Team Run 标为 done。
         </div>
       </section>
     </div>
   );
+}
+
+function SummaryCard({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone: "good" | "bad" | "neutral";
+}) {
+  const border =
+    tone === "good"
+      ? "color-mix(in srgb, #10b981 35%, var(--border))"
+      : tone === "bad"
+        ? "color-mix(in srgb, #ef4444 35%, var(--border))"
+        : "var(--border)";
+  const bg =
+    tone === "good"
+      ? "color-mix(in srgb, #10b981 8%, var(--bg))"
+      : tone === "bad"
+        ? "color-mix(in srgb, #ef4444 8%, var(--bg))"
+        : "var(--bg)";
+  return (
+    <div style={{ border: `1px solid ${border}`, borderRadius: 8, padding: 10, background: bg, minHeight: 88 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 12, color: "var(--text)", whiteSpace: "pre-wrap", lineHeight: 1.45 }}>{body}</div>
+    </div>
+  );
+}
+
+function buildEvidenceSummary(input: {
+  changeSummary: string;
+  testReport: string;
+  reviewVerdict: string;
+}): EvidenceSummary {
+  const changed: string[] = [];
+  const whatChanged =
+    extractSection(input.changeSummary, /what changed|changes|改动|变更/i) ||
+    extractSection(input.changeSummary, /added|新增/i);
+  if (whatChanged) {
+    for (const line of whatChanged.split(/\n/)) {
+      const t = line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").replace(/\*\*/g, "").trim();
+      if (!t || t.length < 8 || /^#/.test(t) || t.startsWith("|")) continue;
+      changed.push(shortOneLine(t));
+      if (changed.length >= 4) break;
+    }
+  }
+  if (changed.length === 0 && input.changeSummary.trim()) {
+    const first = input.changeSummary
+      .split(/\n/)
+      .map((l) => l.replace(/^#+\s*/, "").trim())
+      .find((l) => l.length > 20 && !l.startsWith("---"));
+    if (first) changed.push(shortOneLine(first));
+  }
+
+  const testStatus = detectStatus(input.testReport);
+  const testBlurb = firstUsefulLine(
+    extractSection(input.testReport, /summary|结论|result|environments?|primary/i) || input.testReport,
+  );
+
+  const reviewStatus = detectStatus(input.reviewVerdict);
+  const primaryVerified = /primary_path_verified\s*:\s*true/i.test(input.reviewVerdict)
+    ? true
+    : /primary_path_verified\s*:\s*false/i.test(input.reviewVerdict)
+      ? false
+      : undefined;
+  const reviewBlurb = firstUsefulLine(
+    input.reviewVerdict
+      .replace(/^---[\s\S]*?---\s*/m, "")
+      .split(/\n/)
+      .filter((l) => !/^\s*status\s*:/i.test(l) && !/primary_path_verified/i.test(l))
+      .join("\n"),
+  );
+
+  return {
+    changed,
+    testStatus,
+    testBlurb: testBlurb ? shortOneLine(testBlurb) : undefined,
+    reviewStatus,
+    reviewBlurb: reviewBlurb ? shortOneLine(reviewBlurb) : undefined,
+    primaryVerified,
+  };
+}
+
+function detectStatus(text: string): "pass" | "fail" | "unknown" {
+  if (!text.trim()) return "unknown";
+  if (/(?:^|\n)\s*status\s*:\s*pass\s*(?:\n|$)/i.test(text)) return "pass";
+  if (/(?:^|\n)\s*status\s*:\s*fail\s*(?:\n|$)/i.test(text)) return "fail";
+  if (/\bPASS\b/.test(text) && !/\bFAIL\b/.test(text)) return "pass";
+  if (/\bFAIL\b/.test(text)) return "fail";
+  return "unknown";
+}
+
+function firstUsefulLine(text: string): string | undefined {
+  for (const line of text.split(/\n/)) {
+    const t = line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").replace(/\*\*/g, "").trim();
+    if (!t || t.length < 12) continue;
+    if (/^#/.test(t) || t.startsWith("|") || t.startsWith("---") || t.startsWith("```")) continue;
+    return t;
+  }
+  return undefined;
 }
 
 function extractHowToRun(input: {
@@ -550,16 +743,16 @@ function extractHowToRun(input: {
   for (const l of rawLines) {
     const urlMatch = l.match(/https?:\/\/[^\s)`"']+/g);
     if (urlMatch) urlMatch.forEach((u) => urls.add(u.replace(/[.,;]+$/, "")));
-    // keep actionable lines
     if (
-      /npm |pnpm |yarn |npx |bun |http:\/\/|https:\/\/|localhost|cd |open |打开|浏览器|install|run dev|serve/i.test(l) ||
+      /npm |pnpm |yarn |npx |bun |http:\/\/|https:\/\/|localhost|cd |open |打开|浏览器|install|run dev|serve/i.test(
+        l,
+      ) ||
       lines.length < 6
     ) {
       if (!lines.includes(l)) lines.push(l);
     }
   }
 
-  // fallbacks from primary path alone
   if (lines.length === 0 && input.primaryPath) {
     lines.push(...input.primaryPath.split(/\n/).map((s) => s.trim()).filter(Boolean).slice(0, 6));
   }
@@ -574,7 +767,11 @@ function extractHowToRun(input: {
   if (/file:\/\//i.test(source) || /double-click|双击/i.test(source)) {
     warnings.push("文档提到 file:// 或双击打开 — 若项目使用 ES modules，请优先用本地 HTTP（如 npm run dev）。");
   }
-  if (/do not.*file:\/\//i.test(source) || /不要.*file:\/\//i.test(source) || /Do not.*file:\/\//i.test(input.changeSummary)) {
+  if (
+    /do not.*file:\/\//i.test(source) ||
+    /不要.*file:\/\//i.test(source) ||
+    /Do not.*file:\/\//i.test(input.changeSummary)
+  ) {
     warnings.push("实现方明确要求：不要用 file:// 打开。");
   }
 
@@ -605,9 +802,13 @@ function looksLikeCommand(line: string): boolean {
   return /^(npm |pnpm |yarn |npx |bun |cd |node |vite\b)/i.test(line) || /`[^`]+`/.test(line);
 }
 
+function stripCodeTicks(line: string): string {
+  return line.replace(/`/g, "");
+}
+
 function shortOneLine(s: string): string {
   const t = s.replace(/\s+/g, " ").trim();
-  return t.length > 120 ? `${t.slice(0, 117)}…` : t;
+  return t.length > 140 ? `${t.slice(0, 137)}…` : t;
 }
 
 function shorten(p: string): string {
