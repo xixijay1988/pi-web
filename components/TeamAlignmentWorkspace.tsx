@@ -5,6 +5,7 @@ import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 import { parseChoicePrompt } from "@/lib/team-runs/choice-parse";
 import { AlignmentChoiceBar, AlignmentSelectDialog } from "./AlignmentChoiceBar";
 import { MarkdownBody } from "./MarkdownBody";
+import { useI18n } from "@/hooks/useI18n";
 
 type CoachMessage = { role: "user" | "assistant"; text: string };
 type SkillOption = { name: string; description: string; disableModelInvocation?: boolean };
@@ -31,6 +32,7 @@ export function TeamAlignmentWorkspace({
   onOpenSession?: (sessionId: string) => void;
   onError?: (message: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [idea, setIdea] = useState("");
   const [reply, setReply] = useState("");
   const [messages, setMessages] = useState<CoachMessage[]>([]);
@@ -109,16 +111,16 @@ export function TeamAlignmentWorkspace({
 
   const send = async (mode: "start" | "continue", textOverride?: string) => {
     if (!cwd) {
-      reportError("Select a project cwd first (Chat sidebar / explorer).");
+      reportError(t("team.workspace.selectProject"));
       return;
     }
     const text = (textOverride ?? (mode === "start" ? idea : reply)).trim();
     if (mode === "continue" && !text) {
-      reportError("Type a reply or pick a choice.");
+      reportError(t("team.workspace.typeReply"));
       return;
     }
     if (mode === "continue" && !sessionId) {
-      reportError("Start alignment first.");
+      reportError(t("team.workspace.startFirst"));
       return;
     }
 
@@ -205,18 +207,18 @@ export function TeamAlignmentWorkspace({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 650 }}>Alignment discussion</div>
+          <div style={{ fontSize: 15, fontWeight: 650 }}>{t("team.workspace.title")}</div>
           <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
-            Full-screen Goal Coach · Skills + model · clickable choices when the coach asks options
+            {t("team.workspace.subtitle")}
           </div>
         </div>
         {sessionId && onOpenSession && (
           <button type="button" onClick={() => onOpenSession(sessionId)} style={headerBtn} disabled={busy}>
-            Open chat session
+            {t("team.workspace.openSession")}
           </button>
         )}
         <button type="button" onClick={onClose} style={headerBtn}>
-          Close
+          {t("common.close")}
         </button>
       </div>
 
@@ -228,9 +230,7 @@ export function TeamAlignmentWorkspace({
             <div style={{ maxWidth: 820, margin: "0 auto" }}>
               {messages.length === 0 ? (
                 <div style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.5, paddingTop: 40 }}>
-                  Start with a raw idea, or open a blank grill-style interview.
-                  The coach will pin Primary Path and acceptance checks.
-                  When options appear, you can click them instead of typing.
+                  {t("team.workspace.emptyIntro")}
                 </div>
               ) : (
                 messages.map((m, i) => {
@@ -248,7 +248,7 @@ export function TeamAlignmentWorkspace({
                       }}
                     >
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600 }}>
-                        {m.role === "user" ? "You" : "Coach"}
+                        {m.role === "user" ? t("team.workspace.you") : t("team.workspace.coach")}
                       </div>
                       {m.role === "assistant" ? (
                         <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>
@@ -272,7 +272,7 @@ export function TeamAlignmentWorkspace({
               )}
               {busy && (
                 <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "8px 0" }}>
-                  Coach thinking…
+                  {t("team.workspace.thinking")}
                 </div>
               )}
             </div>
@@ -289,7 +289,7 @@ export function TeamAlignmentWorkspace({
                   <textarea
                     value={idea}
                     onChange={(e) => setIdea(e.target.value)}
-                    placeholder="Raw idea (optional) — e.g. Apple-style Todo page"
+                    placeholder={t("team.workspace.ideaPlaceholder")}
                     rows={3}
                     style={composer}
                     disabled={busy || !cwd}
@@ -300,7 +300,7 @@ export function TeamAlignmentWorkspace({
                     disabled={busy || !cwd}
                     style={primaryBtn(busy || !cwd)}
                   >
-                    {busy ? "Starting…" : "Start alignment"}
+                    {busy ? t("team.workspace.starting") : t("team.workspace.start")}
                   </button>
                 </>
               ) : (
@@ -308,7 +308,7 @@ export function TeamAlignmentWorkspace({
                   <textarea
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
-                    placeholder="Reply to the coach… or pick a choice above"
+                    placeholder={t("team.workspace.replyPlaceholder")}
                     rows={3}
                     style={composer}
                     disabled={busy}
@@ -326,7 +326,7 @@ export function TeamAlignmentWorkspace({
                       disabled={busy || !reply.trim()}
                       style={{ ...primaryBtn(busy || !reply.trim()), flex: 1 }}
                     >
-                      {busy ? "Sending…" : "Send reply ⌘↵"}
+                      {busy ? t("team.workspace.sending") : t("team.workspace.send")}
                     </button>
                     {choicePrompt && (
                       <button
@@ -335,7 +335,7 @@ export function TeamAlignmentWorkspace({
                         onClick={() => setChoiceDialogOpen(true)}
                         style={{ ...secondaryBtn, flex: "0 0 auto" }}
                       >
-                        Show choices
+                        {t("team.workspace.showChoices")}
                       </button>
                     )}
                   </div>
@@ -358,7 +358,7 @@ export function TeamAlignmentWorkspace({
             gap: 12,
           }}
         >
-          <Section title="Skills">
+          <Section title={t("team.workspace.skills")}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {skillChoices.slice(0, 14).map((s) => {
                 const on = selectedSkills.includes(s.name);
@@ -389,16 +389,16 @@ export function TeamAlignmentWorkspace({
               })}
             </div>
             {sessionId && (
-              <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 6 }}>Skills locked for this session.</div>
+              <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 6 }}>{t("team.workspace.skillsLocked")}</div>
             )}
             {missingSkills.length > 0 && (
               <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 6 }}>
-                Missing: {missingSkills.join(", ")}
+                {t("team.workspace.missing", { skills: missingSkills.join(", ") })}
               </div>
             )}
           </Section>
 
-          <Section title="Model">
+          <Section title={t("team.workspace.model")}>
             <select
               value={provider && modelId ? `${provider}:::${modelId}` : ""}
               disabled={busy || Boolean(sessionId) || models.length === 0}
@@ -418,7 +418,7 @@ export function TeamAlignmentWorkspace({
               }}
             >
               {models.length === 0 ? (
-                <option value="">Session default</option>
+                <option value="">{t("team.workspace.sessionDefault")}</option>
               ) : (
                 models.map((m) => (
                   <option key={`${m.provider}/${m.id}`} value={`${m.provider}:::${m.id}`}>
@@ -429,10 +429,10 @@ export function TeamAlignmentWorkspace({
             </select>
           </Section>
 
-          <Section title="Goal Spec draft">
+          <Section title={t("team.workspace.draftTitle")}>
             {!draft ? (
               <div style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.45 }}>
-                When the coach is ready it emits a <code>goal_spec</code> block. Apply it to the Team form, then start the run.
+                {t("team.workspace.draftEmpty")}
               </div>
             ) : (
               <>
@@ -455,21 +455,21 @@ export function TeamAlignmentWorkspace({
                     background: draftErrors.length === 0 ? "var(--accent)" : "#64748b",
                   }}
                 >
-                  Apply to form & close
+                  {t("team.workspace.applyClose")}
                 </button>
               </>
             )}
           </Section>
 
           <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.45 }}>
-            Tip: multi-seat (Facilitator + Architect critic) remains available from the Team sidebar under Alignment Room.
+            {t("team.workspace.tip")}
           </div>
         </div>
       </div>
 
       {choicePrompt && choiceDialogOpen && sessionId && !busy && (
         <AlignmentSelectDialog
-          title="Coach is asking you to choose"
+          title={t("team.workspace.choiceTitle")}
           prompt={choicePrompt}
           disabled={busy}
           onPick={pickChoice}
