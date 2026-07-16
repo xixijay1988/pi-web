@@ -2,6 +2,7 @@
 
 import { validationFailureDetails } from "@/lib/team-runs/validation-failure";
 import type { PlanNode, RunEvent, RunStatus } from "@/lib/team-runs/types";
+import { useI18n } from "@/hooks/useI18n";
 
 const ACTIVE: RunStatus[] = ["planning", "executing", "replanning", "created"];
 
@@ -18,14 +19,15 @@ export function TeamTimeline({
   nodes?: PlanNode[];
   onOpenFile?: (path: string) => void;
 }) {
+  const { t } = useI18n();
   const ordered = events.slice().reverse();
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 600 }}>Timeline</div>
+        <div style={{ fontSize: 12, fontWeight: 600 }}>{t("team.timeline.title")}</div>
         {ACTIVE.includes(status) && (
-          <span style={{ fontSize: 10, color: "#f59e0b" }}>live</span>
+          <span style={{ fontSize: 10, color: "#f59e0b" }}>{t("team.timeline.live")}</span>
         )}
       </div>
 
@@ -41,12 +43,12 @@ export function TeamTimeline({
             fontSize: 12,
           }}
         >
-          <strong>Blocked / failed:</strong> {blockedReason}
+          <strong>{t("team.timeline.blockedFailed")}</strong> {blockedReason}
         </div>
       )}
 
       {ordered.length === 0 ? (
-        <div style={{ fontSize: 11, color: "var(--text-dim)" }}>No events yet</div>
+        <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{t("team.timeline.noEvents")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           {ordered.map((e, i) => {
@@ -78,7 +80,7 @@ export function TeamTimeline({
                         background: "rgba(239,68,68,0.08)",
                       }}
                     >
-                      <div style={{ color: "#ef4444", fontWeight: 600 }}>Hard validation failed</div>
+                      <div style={{ color: "#ef4444", fontWeight: 600 }}>{t("team.timeline.hardValidationFailed")}</div>
                       <ul style={{ margin: "5px 0 0", paddingLeft: 17, color: "var(--text-muted)" }}>
                         {validationFailure.hardErrors.map((error, errorIndex) => (
                           <li key={`${error}-${errorIndex}`} style={{ marginBottom: 3 }}>{error}</li>
@@ -106,9 +108,9 @@ export function TeamTimeline({
                   ) : null}
                   {(e.nodeId || e.dispatchId) && (
                     <div style={{ color: "var(--text-dim)", marginTop: 2 }}>
-                      {e.nodeId ? `node ${e.nodeId}` : ""}
+                      {e.nodeId ? t("team.timeline.node", { id: e.nodeId }) : ""}
                       {e.nodeId && e.dispatchId ? " · " : ""}
-                      {e.dispatchId ? `dispatch ${e.dispatchId.slice(0, 8)}` : ""}
+                      {e.dispatchId ? t("team.timeline.dispatch", { id: e.dispatchId.slice(0, 8) }) : ""}
                     </div>
                   )}
                 </div>

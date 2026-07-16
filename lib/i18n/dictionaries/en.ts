@@ -56,6 +56,16 @@ export const en = {
   "session.customPath": "Custom path…",
   "theme.switchToLight": "Switch to light mode",
   "theme.switchToDark": "Switch to dark mode",
+  "team.choice.choose": "Choose an option",
+  "team.choice.quickReply": "Quick reply — tap a choice",
+  "team.choice.typeOwn": "Type my own reply",
+  "team.timeline.blockedFailed": "Blocked / failed:",
+  "team.timeline.dispatch": "dispatch {id}",
+  "team.timeline.hardValidationFailed": "Hard validation failed",
+  "team.timeline.live": "live",
+  "team.timeline.noEvents": "No events yet",
+  "team.timeline.node": "node {id}",
+  "team.timeline.title": "Timeline",
 } as const;
 
 export type TranslationKey = keyof typeof en;

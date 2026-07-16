@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/hooks/useI18n";
+
 import type { CSSProperties } from "react";
 import type { ChoicePrompt } from "@/lib/team-runs/choice-parse";
 
@@ -13,10 +15,11 @@ export function AlignmentChoiceBar({
   disabled?: boolean;
   onPick: (value: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
-        Quick reply — tap a choice
+        {t("team.choice.quickReply")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {prompt.choices.map((c) => (
@@ -49,6 +52,7 @@ export function AlignmentSelectDialog({
   onPick: (value: string) => void;
   onDismiss: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       role="dialog"
@@ -79,7 +83,7 @@ export function AlignmentSelectDialog({
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 650, marginBottom: 6 }}>
-          {title ?? "Choose an option"}
+          {title ?? t("team.choice.choose")}
         </div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45, marginBottom: 12, whiteSpace: "pre-wrap" }}>
           {prompt.prompt}
@@ -112,7 +116,7 @@ export function AlignmentSelectDialog({
             fontSize: 12,
           }}
         >
-          Type my own reply
+          {t("team.choice.typeOwn")}
         </button>
       </div>
     </div>
