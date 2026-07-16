@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Node test runner, existing inline-style component patterns, `localStorage`.
 
+**Execution status:** Completed on `dev` through commits `2389fb6`, `0bb5d51`, `3e6221c`, and `39bc75a`. Browser smoke verification passed; continue with `2026-07-16-ui-i18n-shell-chat.md`.
+
 ---
 
 ## File Structure
