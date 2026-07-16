@@ -13,6 +13,7 @@ export const zhCN = {
   "settings.plugins": "插件",
   "settings.roles": "角色",
   "settings.language": "界面语言",
+  "settings.languageCurrent": "界面语言：{language}",
   "settings.switchToEnglish": "切换为英文",
   "settings.switchToChinese": "切换为简体中文",
   "settings.english": "英文",

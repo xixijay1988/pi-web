@@ -11,6 +11,7 @@ export const en = {
   "settings.plugins": "Plugins",
   "settings.roles": "Roles",
   "settings.language": "Interface language",
+  "settings.languageCurrent": "Interface language: {language}",
   "settings.switchToEnglish": "Switch to English",
   "settings.switchToChinese": "Switch to Simplified Chinese",
   "settings.english": "English",

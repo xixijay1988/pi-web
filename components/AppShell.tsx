@@ -17,6 +17,7 @@ import type { GoalSpec } from "@/lib/team-runs/goal-spec";
 import type { AgentMessage } from "@/lib/types";
 import { BranchNavigator } from "./BranchNavigator";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/hooks/useI18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { copyText } from "@/lib/clipboard";
 import { getFileName } from "@/lib/file-paths";
@@ -24,6 +25,7 @@ import { buildAtMentionText } from "@/lib/file-fuzzy";
 import type { SessionInfo, SessionTreeNode } from "@/lib/types";
 import type { ChatInputHandle } from "./ChatInput";
 import type { SessionStatsInfo } from "@/lib/pi-types";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 type SessionCopyField = "file" | "id";
 
@@ -31,6 +33,7 @@ export function AppShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isDark, toggleTheme } = useTheme();
+  const { t } = useI18n();
   const isMobile = useIsMobile();
   const [selectedSession, setSelectedSession] = useState<SessionInfo | null>(null);
   // When user clicks +, we only store the cwd — no fake session id
@@ -388,7 +391,7 @@ export function AppShell() {
       <div style={{ padding: "8px", flexShrink: 0, display: "flex", justifyContent: "space-between", gap: 4 }}>
         {([
           {
-            label: "Models",
+            label: t("settings.models"),
             onClick: () => setModelsConfigOpen(true),
             disabled: false,
             icon: (
@@ -402,7 +405,7 @@ export function AppShell() {
             ),
           },
           {
-            label: "Skills",
+            label: t("settings.skills"),
             onClick: () => setSkillsConfigOpen(true),
             disabled: !activeCwd && !selectedSession?.cwd && !newSessionCwd,
             icon: (
@@ -414,7 +417,7 @@ export function AppShell() {
             ),
           },
           {
-            label: "Plugins",
+            label: t("settings.plugins"),
             onClick: () => setPluginsConfigOpen(true),
             disabled: !activeCwd && !selectedSession?.cwd && !newSessionCwd,
             icon: (
@@ -427,7 +430,7 @@ export function AppShell() {
             ),
           },
           {
-            label: "Roles",
+            label: t("settings.roles"),
             onClick: () => setRolesConfigOpen(true),
             disabled: false,
             icon: (
@@ -459,6 +462,9 @@ export function AppShell() {
             {label}
           </button>
         ))}
+      </div>
+      <div style={{ padding: "0 8px 8px", flexShrink: 0 }}>
+        <LanguageSwitcher variant="settings" />
       </div>
     </>
   );
@@ -573,8 +579,8 @@ export function AppShell() {
         <div ref={topBarRef} style={{ display: "flex", alignItems: "center", flexShrink: 0, borderBottom: "1px solid var(--border)", height: 36, background: "var(--bg-panel)" }}>
           <button
             onClick={handleSidebarToggle}
-            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-            aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            title={sidebarOpen ? t("navigation.hideSidebar") : t("navigation.showSidebar")}
+            aria-label={sidebarOpen ? t("navigation.hideSidebar") : t("navigation.showSidebar")}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 36, height: 36, padding: 0,
@@ -599,7 +605,7 @@ export function AppShell() {
               <button
                 key={mode}
                 onClick={() => setProductMode(mode)}
-                title={mode === "chat" ? "Chat mode" : "Team mode"}
+                title={mode === "chat" ? t("navigation.chatMode") : t("navigation.teamMode")}
                 style={{
                   padding: "4px 10px",
                   borderRadius: 6,
@@ -612,17 +618,18 @@ export function AppShell() {
                   textTransform: "capitalize",
                 }}
               >
-                {mode === "chat" ? "Chat" : "Team"}
+                {mode === "chat" ? t("navigation.chat") : t("navigation.team")}
               </button>
             ))}
           </div>
+          <LanguageSwitcher variant="toolbar" />
 <button
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
             }}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? t("theme.switchToLight") : t("theme.switchToDark")}
+            aria-label={isDark ? t("theme.switchToLight") : t("theme.switchToDark")}
             aria-pressed={isDark}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
