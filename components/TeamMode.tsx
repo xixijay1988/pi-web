@@ -10,6 +10,7 @@ import { TeamAcceptancePanel } from "./TeamAcceptancePanel";
 import { TeamAlignmentRoom } from "./TeamAlignmentRoom";
 import { TeamAlignmentWorkspace } from "./TeamAlignmentWorkspace";
 import type { GoalSpec } from "@/lib/team-runs/goal-spec";
+import { useI18n } from "@/hooks/useI18n";
 
 function shortenPath(p: string): string {
   return p.replace(/^\/(?:Users|home)\/[^/]+/, "~");
@@ -49,6 +50,7 @@ export function TeamMode({
   onOpenSession?: (sessionId: string) => void;
   onOpenFile?: (filePath: string, fileName: string) => void;
 }) {
+  const { t } = useI18n();
   const [runs, setRuns] = useState<TeamRunListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(selectedRunId ?? null);
   const { run, setRun, error, setError, loading } = useTeamRun(selectedId);
@@ -112,7 +114,7 @@ export function TeamMode({
 
   const createRun = async () => {
     if (!cwd) {
-      setError("Select a project cwd first (Chat sidebar / explorer).");
+      setError(t("team.mode.selectProject"));
       return;
     }
     const acceptanceChecks = acceptanceText
@@ -245,11 +247,11 @@ export function TeamMode({
         }}
       >
         <div style={{ padding: 12, borderBottom: "1px solid var(--border)", overflow: "auto", maxHeight: "55%" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>New Team Run</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{t("team.mode.newRun")}</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
             {([
-              ["align", "Align then start"],
-              ["quick", "Quick form"],
+              ["align", t("team.mode.alignThenStart")],
+              ["quick", t("team.mode.quickForm")],
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -272,15 +274,14 @@ export function TeamMode({
 
           {!cwd && (
             <div style={{ fontSize: 11, color: "#ef4444", marginBottom: 8 }}>
-              Select a project cwd in the Chat sidebar first.
+              {t("team.mode.selectProject")}
             </div>
           )}
 
           {createMode === "align" && (
             <>
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.45 }}>
-                Open the full-screen discussion workspace to grill requirements with Skills and clickable choices.
-                Multi-seat room stays available below. Then confirm Goal Spec and start.
+                {t("team.mode.alignHelp")}
               </div>
               <button
                 type="button"
@@ -300,11 +301,11 @@ export function TeamMode({
                   opacity: !cwd || busy ? 0.6 : 1,
                 }}
               >
-                Open discussion workspace
+                {t("team.mode.openWorkspace")}
               </button>
               <details style={{ marginBottom: 10 }}>
                 <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>
-                  Multi-seat Alignment Room (advanced)
+                  {t("team.mode.multiSeatAdvanced")}
                 </summary>
                 <div style={{ marginTop: 8 }}>
                   <TeamAlignmentRoom
@@ -324,7 +325,7 @@ export function TeamMode({
             </>
           )}
 
-          <Field label="Outcome *">
+          <Field label={t("team.mode.outcome")}>
             <textarea
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
@@ -333,7 +334,7 @@ export function TeamMode({
               style={fieldStyle}
             />
           </Field>
-          <Field label="Primary Path *">
+          <Field label={t("team.mode.primaryPath")}>
             <textarea
               value={primaryPath}
               onChange={(e) => setPrimaryPath(e.target.value)}
@@ -342,7 +343,7 @@ export function TeamMode({
               style={fieldStyle}
             />
           </Field>
-          <Field label="Acceptance checks * (one per line, ≥3)">
+          <Field label={t("team.mode.acceptanceChecks")}>
             <textarea
               value={acceptanceText}
               onChange={(e) => setAcceptanceText(e.target.value)}
@@ -352,7 +353,7 @@ export function TeamMode({
             />
           </Field>
           {createMode === "align" && (
-            <Field label="Discussion notes (optional)">
+            <Field label={t("team.mode.discussionNotes")}>
               <textarea
                 value={alignDraft}
                 onChange={(e) => setAlignDraft(e.target.value)}
@@ -363,11 +364,11 @@ export function TeamMode({
             </Field>
           )}
           <details style={{ marginBottom: 8 }}>
-            <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>Optional constraints</summary>
-            <Field label="Constraints">
+            <summary style={{ fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}>{t("team.mode.optionalConstraints")}</summary>
+            <Field label={t("team.mode.constraints")}>
               <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} rows={2} style={fieldStyle} />
             </Field>
-            <Field label="Out of scope">
+            <Field label={t("team.mode.outOfScope")}>
               <textarea value={outOfScope} onChange={(e) => setOutOfScope(e.target.value)} rows={2} style={fieldStyle} />
             </Field>
           </details>
@@ -388,10 +389,10 @@ export function TeamMode({
               fontSize: 12,
             }}
           >
-            Confirm Goal Spec & start
+            {t("team.mode.confirmStart")}
           </button>
           <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>
-            Serial engine: plan → architect → implement → test → review → your acceptance.
+            {t("team.mode.serialFlow")}
           </div>
         </div>
         <div style={{ flex: 1, overflow: "auto" }}>
@@ -399,7 +400,7 @@ export function TeamMode({
             <div style={{ padding: 12, fontSize: 12, color: "#ef4444" }}>{listError}</div>
           )}
           {runs.length === 0 ? (
-            <div style={{ padding: 12, fontSize: 12, color: "var(--text-dim)" }}>No Team Runs yet</div>
+            <div style={{ padding: 12, fontSize: 12, color: "var(--text-dim)" }}>{t("team.mode.noRuns")}</div>
           ) : (
             runs.map((r) => (
               <button
@@ -438,13 +439,13 @@ export function TeamMode({
         )}
         {!selectedId || !run ? (
           <div style={{ margin: "auto", color: "var(--text-dim)", fontSize: 13 }}>
-            {loading ? "Loading…" : "Select or create a Team Run"}
+            {loading ? t("common.loading") : t("team.mode.selectOrCreate")}
           </div>
         ) : (
           <>
             <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Team Run</div>
+                <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{t("team.mode.runTitle")}</div>
                 <span style={{ fontSize: 12, color: statusColor(run.status) }}>{run.status}</span>
               </div>
               <div style={{ fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap" }}>{run.goal}</div>
@@ -481,13 +482,13 @@ export function TeamMode({
                     fontSize: 11,
                   }}
                 >
-                  <div style={{ color: "#ef4444", fontWeight: 700, marginBottom: 5 }}>Needs attention</div>
+                  <div style={{ color: "#ef4444", fontWeight: 700, marginBottom: 5 }}>{t("team.mode.needsAttention")}</div>
                   {blockedReason && (
                     <div style={{ color: "var(--text-muted)", whiteSpace: "pre-wrap" }}>{blockedReason}</div>
                   )}
                   {validationFailure?.nodeId && (
                     <div style={{ color: "var(--text-dim)", marginTop: 5 }}>
-                      Failed node: <strong style={{ color: "var(--text)" }}>{validationFailure.nodeId}</strong>
+                      {t("team.mode.failedNode", { id: validationFailure.nodeId })}
                     </div>
                   )}
                   {validationFailure && (
@@ -513,7 +514,7 @@ export function TeamMode({
                             fontSize: 10,
                           }}
                         >
-                          Open file
+                          {t("team.mode.openFile")}
                         </button>
                       )}
                     </div>
@@ -522,9 +523,9 @@ export function TeamMode({
               )}
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                <ActionBtn disabled={busy} onClick={() => void command("pause")}>Pause</ActionBtn>
-                <ActionBtn disabled={busy} onClick={() => void command("resume")}>Resume</ActionBtn>
-                <ActionBtn disabled={busy} onClick={() => void command("cancel")}>Cancel</ActionBtn>
+                <ActionBtn disabled={busy} onClick={() => void command("pause")}>{t("team.mode.pause")}</ActionBtn>
+                <ActionBtn disabled={busy} onClick={() => void command("resume")}>{t("team.mode.resume")}</ActionBtn>
+                <ActionBtn disabled={busy} onClick={() => void command("cancel")}>{t("team.mode.cancel")}</ActionBtn>
               </div>
 
               <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 10 }}>
@@ -758,7 +759,7 @@ export function TeamMode({
                   onOpenFile={onOpenFile ? (path) => onOpenFile(path, getFileName(path)) : undefined}
                 />
 
-                <Section title="Human note">
+                <Section title={t("team.mode.humanNote")}>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -776,7 +777,7 @@ export function TeamMode({
                     }}
                   />
                   <ActionBtn disabled={busy || !note.trim()} onClick={() => void command("note", note.trim())}>
-                    Add note
+                    {t("team.mode.addNote")}
                   </ActionBtn>
                   {run.humanNotes.length > 0 && (
                     <div style={{ marginTop: 8 }}>
