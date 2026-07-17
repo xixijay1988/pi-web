@@ -51,8 +51,10 @@ Details: [docs/desktop.md](./docs/desktop.md).
 pi-web --port 8080              # custom port
 pi-web --hostname 127.0.0.1     # local access only
 pi-web -p 8080 -H 127.0.0.1     # combine options
+pi-web --no-open                # do not open the browser automatically
 
 PORT=8080 pi-web                # environment variable is also supported
+PI_WEB_NO_OPEN=1 pi-web         # useful when running as a background service
 ```
 
 ## Features

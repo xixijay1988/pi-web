@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useGlobalKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { SessionSidebar } from "./SessionSidebar";
 import { ChatWindow } from "./ChatWindow";
 import { FileViewer } from "./FileViewer";
@@ -21,7 +22,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { copyText } from "@/lib/clipboard";
 import { getFileName } from "@/lib/file-paths";
-import { buildAtMentionText } from "@/lib/file-fuzzy";
+import { buildAtMentionText, buildFileAtMentionsText } from "@/lib/file-fuzzy";
 import type { SessionInfo, SessionTreeNode } from "@/lib/types";
 import type { ChatInputHandle } from "./ChatInput";
 import type { SessionStatsInfo } from "@/lib/pi-types";
@@ -157,6 +158,11 @@ export function AppShell() {
     chatInputRef.current?.insertText(buildAtMentionText(relativePath, isDir));
   }, []);
 
+  const handleAtMentions = useCallback((relativePaths: string[]) => {
+    const mentions = buildFileAtMentionsText(relativePaths);
+    if (mentions) chatInputRef.current?.insertText(mentions);
+  }, []);
+
   const [initialSessionId] = useState<string | null>(() => searchParams.get("session"));
   const [activeCwd, setActiveCwd] = useState<string | null>(null);
   // True once the initial ?session= URL param has been resolved (or confirmed absent)
@@ -194,6 +200,12 @@ export function AppShell() {
     router.replace("/", { scroll: false });
   }, [router, selectedSession]);
 
+  // Update browser tab title when workspace changes
+  useEffect(() => {
+    const name = activeCwd ? getFileName(activeCwd) || activeCwd : null;
+    document.title = name ? `${name} — Pi Agent Web` : "Pi Agent Web";
+  }, [activeCwd]);
+
   const handleSelectSession = useCallback((session: SessionInfo, isRestore = false) => {
     setNewSessionCwd(null);
     setSelectedSession(session);
@@ -225,6 +237,12 @@ export function AppShell() {
     if (isMobile) setSidebarOpen(false);
     router.replace("/", { scroll: false });
   }, [router, isMobile]);
+
+  // Global keyboard shortcuts (handles Esc, Ctrl+Alt+N etc.)
+  useGlobalKeyboardShortcuts({
+    onNewSession: (cwd: string) => handleNewSession(`kb-${Date.now()}`, cwd),
+    activeCwd,
+  });
 
   // Client-built transient SessionInfo (new session / fork) lacks the
   // server-computed projectRoot, which the same-project check in
@@ -359,9 +377,13 @@ export function AppShell() {
     });
   }, [fileTabs]);
 
-  const handleExportSession = useCallback(() => {
+  const handleViewFullHistory = useCallback(() => {
     if (!selectedSession) return;
-    window.location.href = `/api/sessions/${encodeURIComponent(selectedSession.id)}/export`;
+    window.open(
+      `/api/sessions/${encodeURIComponent(selectedSession.id)}/export?inline=1`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   }, [selectedSession]);
 
   // Show chat area if a session is selected, or if we have a cwd to start a new session in
@@ -387,6 +409,7 @@ export function AppShell() {
         onOpenFile={handleOpenFile}
         explorerRefreshKey={explorerRefreshKey}
         onAtMention={handleAtMention}
+        onAtMentions={handleAtMentions}
       />
       <div style={{ padding: "8px", flexShrink: 0, display: "flex", justifyContent: "space-between", gap: 4 }}>
         {([
@@ -657,10 +680,10 @@ export function AppShell() {
           {showChat && (
             <div style={{ display: "flex", alignItems: "stretch", height: "100%" }}>
               <button
-                onClick={handleExportSession}
+                onClick={handleViewFullHistory}
                 disabled={!selectedSession}
-                title={selectedSession ? t("app.exportHtml") : t("app.exportUnavailable")}
-                aria-label={t("app.exportHtml")}
+                title={selectedSession ? t("app.fullHistory") : t("app.fullHistoryUnavailable")}
+                aria-label={t("app.fullHistory")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -689,24 +712,25 @@ export function AppShell() {
                   e.currentTarget.style.background = "none";
                 }}
               >
-                <span style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 18,
-                  height: 18,
-                  borderRadius: 5,
-                  background: "transparent",
-                  color: selectedSession ? "var(--text-muted)" : "var(--text-dim)",
-                  flexShrink: 0,
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                </span>
-                {!isMobile && <span>{t("app.export")}</span>}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    color: selectedSession ? "var(--text-muted)" : "var(--text-dim)",
+                    flexShrink: 0,
+                  }}
+                >
+                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                  <path d="M3 3v5h5" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+                {!isMobile && <span>{t("app.fullHistory")}</span>}
               </button>
               <BranchNavigator
                 tree={branchTree}
@@ -1132,6 +1156,11 @@ export function AppShell() {
               filePath={activeFileTab.filePath}
               cwd={activeCwd ?? undefined}
               sourceSessionId={activeFileTab.sourceSessionId}
+              onOpenFile={(filePath) => handleOpenFile(
+                filePath,
+                getFileName(filePath),
+                activeFileTab.sourceSessionId,
+              )}
             />
           ) : (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-dim)", fontSize: 12 }}>
